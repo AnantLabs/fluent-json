@@ -33,42 +33,30 @@ namespace FluentJson.Example
     {
         static void Main(string[] args)
         {
-            Book input = new Book();
-            input.title = "Around the world in 80 days";
-            input.pageCount = 342;
-
-            input.author = new Author();
-            input.author.forname = "Jules";
-            input.author.surname = "Verne";
-            input.author.bookCount = 11;
-
-            input.tags = new List<string> { "traveling", "adventure" };
-
             IJsonEncoder<Book> encoder = Json.EncoderFor<Book>(config => config
                 .MapObject(map => map
                     .AutoMap()
                 )
-                .MapObject<Author>(map =>
-                    map.AutoMap()
+                .MapObject<Author>(map => map
+                    .Map(author => author.forname, "author_forname")
+                    .Map(author => author.surname, "author_surname")
                 )
                 .Tidy(true)
             );
 
-            IJsonDecoder<Book> decoder = Json.DecoderFor<Book>(config => config
-                .MapObject(map => map
-                    .AutoMap()
-                )
-                .MapObject<Author>(map =>
-                    map.AutoMap()
-                )
-            );
+            Book book = new Book();
+            book.title = "Around the world in 80 days";
+            book.tags = new List<string> { "traveling", "adventure" };
+            book.pageCount = 342;
 
-            Console.WriteLine("Encoded:");
-            Console.ReadLine();
-            Console.WriteLine(encoder.Encode(input));
-            Console.ReadLine();
-            Console.WriteLine("Decoded and Encoded:");
-            Console.WriteLine(encoder.Encode(decoder.Decode(encoder.Encode(input))));
+            book.author = new Author();
+            book.author.forname = "Jules";
+            book.author.surname = "Verne";
+            book.author.bookCount = 41;
+
+            string json = encoder.Encode(book);
+
+            Console.WriteLine(json);
             Console.ReadLine();
         }
     }
