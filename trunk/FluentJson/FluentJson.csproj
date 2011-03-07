@@ -52,6 +52,7 @@
     <Compile Include="Mapping\JsonObjectMapping.cs" />
     <Compile Include="Mapping\MappedDecoder.cs" />
     <Compile Include="Mapping\MappedEncoder.cs" />
+    <Compile Include="Mapping\ReferenceStore.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup />

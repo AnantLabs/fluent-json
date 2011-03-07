@@ -58,19 +58,5 @@ namespace FluentJson.Tests
         }
 
         #endregion
-
-        #region Numbers
-
-        #endregion
-
-        #region Whitespace
-
-        [TestMethod]
-        public void TestWhitespace1()
-        {
-
-        }
-
-        #endregion
     }
 }
