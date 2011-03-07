@@ -34,10 +34,10 @@ namespace FluentJson.Mapping
 {
     public class JsonObjectMappingBase
     {
-        internal Dictionary<MemberInfo, string> Mappings { get; private set; }
+        internal Dictionary<MemberInfo, JsonFieldMappingBase> FieldMappings { get; private set; }
         internal JsonObjectMappingBase()
         {
-            this.Mappings = new Dictionary<MemberInfo, string>();
+            this.FieldMappings = new Dictionary<MemberInfo, JsonFieldMappingBase>();
         }
     }
 
@@ -50,47 +50,59 @@ namespace FluentJson.Mapping
             _exludes = new List<MemberInfo>();
         }
 
-        public JsonObjectMapping<T> Map(Expression<Func<T, object>> expression, string fieldName)
-        {
-            MemberInfo memberInfo = _getAccessedFieldOrProperty(expression);
-            _mapMember(memberInfo, fieldName);
-
-            return this;
-        }
-
-        public JsonObjectMapping<T> AutoMap()
+        public JsonObjectMapping<T> AllFields()
         {
             List<MemberInfo> members = new List<MemberInfo>();
             members.AddRange(typeof(T).GetFields());
             members.AddRange(typeof(T).GetProperties());
 
-            foreach(MemberInfo memberInfo in members)
+            foreach (MemberInfo memberInfo in members)
             {
-                _mapMember(memberInfo, memberInfo.Name);
+                _mapMember(memberInfo, new JsonFieldMapping<object>(memberInfo));
             }
 
             return this;
         }
 
-        public JsonObjectMapping<T> Exclude(Expression<Func<T, object>> expression)
+        public JsonObjectMapping<T> FieldTo(Expression<Func<T, object>> fieldExpression, string jsonObjectField)
         {
-            MemberInfo memberInfo = _getAccessedFieldOrProperty(expression);
+            MemberInfo memberInfo = _getAccessedMemberInfo(fieldExpression);
+            _mapMember(memberInfo, new JsonFieldMapping<object>(memberInfo, jsonObjectField));
+
+            return this;
+        }
+
+        public JsonObjectMapping<T> Field<TField>(Expression<Func<T, TField>> fieldExpression, Action<JsonFieldMapping<TField>> mappingExpression)
+        {
+            MemberInfo memberInfo = _getAccessedMemberInfo<TField>(fieldExpression);
+
+            JsonFieldMapping<TField> fieldMapping = new JsonFieldMapping<TField>(memberInfo);
+            mappingExpression(fieldMapping);
+
+            _mapMember(memberInfo, fieldMapping);
+
+            return this;
+        }
+
+        public JsonObjectMapping<T> ExceptField(Expression<Func<T, object>> fieldExpression)
+        {
+            MemberInfo memberInfo = _getAccessedMemberInfo(fieldExpression);
 
             if (_exludes.Contains(memberInfo))
             {
                 throw new Exception("The member '" + memberInfo.Name + "' is already excluded.");
             }
 
-            if (Mappings.ContainsKey(memberInfo))
+            if (FieldMappings.ContainsKey(memberInfo))
             {
-                this.Mappings.Remove(memberInfo);
+                this.FieldMappings.Remove(memberInfo);
             }
 
             _exludes.Add(memberInfo);
             return this;
         }
 
-        private MemberInfo _getAccessedFieldOrProperty(Expression<Func<T, object>> expression)
+        private MemberInfo _getAccessedMemberInfo<TField>(Expression<Func<T, TField>> expression)
         {
             if (expression.Body.NodeType == ExpressionType.MemberAccess)
             {
@@ -104,24 +116,17 @@ namespace FluentJson.Mapping
             throw new Exception("This expression does not define a property or field access.");
         }
 
-        private void _mapMember(MemberInfo memberInfo, string fieldName)
+        private void _mapMember(MemberInfo memberInfo, JsonFieldMappingBase fieldMapping)
         {
             if (!_exludes.Contains(memberInfo))
             {
-                if (!this.Mappings.ContainsKey(memberInfo) && !this.Mappings.ContainsValue(fieldName))
+                if (this.FieldMappings.ContainsKey(memberInfo))
                 {
-                    this.Mappings.Add(memberInfo, fieldName);
+                    this.FieldMappings[memberInfo] = fieldMapping;
                 }
                 else
                 {
-                    if (this.Mappings.ContainsKey(memberInfo))
-                    {
-                        throw new Exception("The member '" + memberInfo.Name + "' is already mapped.");
-                    }
-                    else
-                    {
-                        throw new Exception("An existing member is already mapped to '" + fieldName + "'.");
-                    }
+                    this.FieldMappings.Add(memberInfo, fieldMapping);
                 }
             }
         }

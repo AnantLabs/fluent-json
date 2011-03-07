@@ -26,6 +26,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+
+using FluentJson.Mapping;
 
 namespace FluentJson.Example
 {
@@ -33,30 +36,55 @@ namespace FluentJson.Example
     {
         static void Main(string[] args)
         {
+            // Construct the encoder
             IJsonEncoder<Book> encoder = Json.EncoderFor<Book>(config => config
-                .MapObject(map => map
-                    .AutoMap()
+                .Map(map => map
+                    .AllFields()
+                    .Field<DateTime>(book => book.pubDate, pubDate => pubDate
+                        .EncodeAs<string>(date => date.ToShortDateString())
+                    )
                 )
-                .MapObject<Author>(map => map
-                    .Map(author => author.forname, "author_forname")
-                    .Map(author => author.surname, "author_surname")
+                .MapType<Author>(map => map
+                    .AllFields()
                 )
                 .Tidy(true)
             );
 
-            Book book = new Book();
-            book.title = "Around the world in 80 days";
-            book.tags = new List<string> { "traveling", "adventure" };
-            book.pageCount = 342;
+            // Construct input
+            Book input = new Book();
+            input.title = "Around the world in 80 days";
+            input.tags = new List<string> { "traveling", "adventure" };
+            input.pubDate = DateTime.Today;
+            input.numPages = 342;
 
-            book.author = new Author();
-            book.author.forname = "Jules";
-            book.author.surname = "Verne";
-            book.author.bookCount = 41;
+            input.author = new Author();
+            input.author.forname = "Jules";
+            input.author.surname = "Verne";
 
-            string json = encoder.Encode(book);
+            // ENCODE
+            string json = encoder.Encode(input);
 
             Console.WriteLine(json);
+            Console.ReadLine();
+
+            // Construct the decoder
+            IJsonDecoder<Book> decoder = Json.DecoderFor<Book>(config => config
+                .Map(map => map
+                    .AllFields()
+                    .Field<DateTime>(book => book.pubDate, pubDate => pubDate
+                        .DecodeAs<string>(date => DateTime.Parse(date))
+                    )
+                )
+                .MapType<Author>(map => map
+                    .AllFields()
+                )
+            );
+
+            // DECODE
+            Book output = decoder.Decode(json);
+
+            Console.WriteLine("Encoded pubdate == Decoded pubdate");
+            Console.WriteLine(input.pubDate == output.pubDate);
             Console.ReadLine();
         }
     }
@@ -64,18 +92,14 @@ namespace FluentJson.Example
     class Book
     {
         public string title { get; set; }
+        public DateTime pubDate { get; set; }
+        public int numPages { get; set; }
         public IList<string> tags { get; set; }
-        public int pageCount { get; set; }
 
         public Author author { get; set; }
     }
 
-    class Author : Person
-    {
-        public short bookCount { get; set; }
-    }
-
-    class Person
+    class Author
     {
         public string forname { get; set; }
         public string surname { get; set; }

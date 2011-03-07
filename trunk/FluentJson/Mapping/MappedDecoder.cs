@@ -198,39 +198,44 @@ namespace FluentJson.Mapping
             {
                 JsonObjectMappingBase mapping = _configuration.Mappings[target.GetType()];
 
-                Dictionary<MemberInfo, string>.Enumerator mappings = mapping.Mappings.GetEnumerator();
-                while (mappings.MoveNext())
+                Dictionary<MemberInfo, JsonFieldMappingBase>.Enumerator fieldMappings = mapping.FieldMappings.GetEnumerator();
+                while (fieldMappings.MoveNext())
                 {
-                    string fieldName = mappings.Current.Value;
-                    if (dictionary.ContainsKey(fieldName))
+                    JsonFieldMappingBase fieldMapping = fieldMappings.Current.Value;
+                    if (dictionary.ContainsKey(fieldMapping.JsonObjectField))
                     {
-                        MemberInfo memberInfo = mappings.Current.Key;
+                        MemberInfo memberInfo = fieldMappings.Current.Key;
 
-                        // Assign property
+                        // Convert to decodable value
+                        object fieldValue = _toDesiredValue(dictionary[fieldMapping.JsonObjectField], fieldMapping.DesiredType);
+
+                        // Pass trough (possible) fieldmapping decoder
+                        fieldValue = fieldMapping.Decode(fieldValue);
+
                         if (memberInfo is PropertyInfo)
                         {
+                            // Assign property
                             PropertyInfo propertyInfo = (PropertyInfo)memberInfo;
                             if (propertyInfo.CanWrite)
                             {
-                                propertyInfo.SetValue(target, _toDesiredValue(dictionary[fieldName], propertyInfo.PropertyType), null);
+                                propertyInfo.SetValue(target, fieldValue, null);
                             }
                             else
                             {
                                 throw new Exception("Property '" + propertyInfo.Name + "' could not be assigned.");
                             }
                         }
-
-                        //Assign field
-                        if (memberInfo is FieldInfo)
+                        else if (memberInfo is FieldInfo)
                         {
+                            //Assign field
                             FieldInfo fieldInfo = (FieldInfo)memberInfo;
-                            fieldInfo.SetValue(target, _toDesiredValue(dictionary[fieldName], fieldInfo.FieldType));
+                            fieldInfo.SetValue(target, fieldValue);
                         }
 
                     }
                     else
                     {
-                        throw new Exception("Field '" + fieldName + "' is not present in decoded dictionary.");
+                        throw new Exception("Field '" + fieldMapping + "' is not present in decoded dictionary.");
                     }
                 }
             }

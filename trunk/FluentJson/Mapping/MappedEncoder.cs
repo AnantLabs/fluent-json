@@ -58,31 +58,47 @@ namespace FluentJson.Mapping
             {
                 JsonObjectMappingBase mapping = _configuration.Mappings[value.GetType()];
 
-                Dictionary<MemberInfo, string>.Enumerator mappings = mapping.Mappings.GetEnumerator();
+                Dictionary<MemberInfo, JsonFieldMappingBase>.Enumerator mappings = mapping.FieldMappings.GetEnumerator();
                 while (mappings.MoveNext())
                 {
-                    string fieldName = mappings.Current.Value;
+                    JsonFieldMappingBase fieldMapping = mappings.Current.Value;
                     MemberInfo memberInfo = mappings.Current.Key;
 
-                     // Get property
+                    // Get value for encoding
+                    object fieldValue = null;
                     if (memberInfo is PropertyInfo)
                     {
+                        // Access property
                         PropertyInfo propertyInfo = (PropertyInfo)memberInfo;
                         if (propertyInfo.CanRead)
                         {
-                            result.Add(fieldName, _toEncodableValue(propertyInfo.GetValue(value, null)));
+                            fieldValue = propertyInfo.GetValue(value, null);
                         }
                         else
                         {
                             throw new Exception("Property '" + propertyInfo.Name + "' could not be read.");
                         }
                     }
-
-                    //Get field
-                    if (memberInfo is FieldInfo)
+                    else if (memberInfo is FieldInfo)
                     {
+                        // Access field
                         FieldInfo fieldInfo = (FieldInfo)memberInfo;
-                        result.Add(fieldName, _toEncodableValue(fieldInfo.GetValue(value)));
+                        fieldValue = fieldInfo.GetValue(value);
+                    }
+
+                    // Pass trough (possible) fieldmapping encoder
+                    fieldValue = fieldMapping.Encode(fieldValue);
+
+                    // Convert to encodable value
+                    fieldValue = _toEncodableValue(fieldValue);
+
+                    if (!result.ContainsKey(fieldMapping.JsonObjectField))
+                    {
+                        result.Add(fieldMapping.JsonObjectField, fieldValue);
+                    }
+                    else
+                    {
+                        throw new Exception("A field mapping already exists for field name '" + fieldMapping.JsonObjectField + "'.");
                     }
                 }
             }

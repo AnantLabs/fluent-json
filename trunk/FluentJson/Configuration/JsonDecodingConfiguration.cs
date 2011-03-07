@@ -37,9 +37,9 @@ namespace FluentJson.Configuration
         /// </summary>
         /// <param name="expression">The object mapping expression.</param>
         /// <returns>The configuration.</returns>
-        new public JsonDecodingConfiguration<T> MapObject(Action<JsonObjectMapping<T>> expression)
+        new public JsonDecodingConfiguration<T> Map(Action<JsonObjectMapping<T>> expression)
         {
-            return (JsonDecodingConfiguration<T>)base.MapObject<T>(expression);
+            return (JsonDecodingConfiguration<T>)base.Map(expression);
         }
 
         /// <summary>
@@ -48,9 +48,9 @@ namespace FluentJson.Configuration
         /// <typeparam name="TObject">Type to map.</typeparam>
         /// <param name="expression">The object mapping expression.</param>
         /// <returns>The configuration.</returns>
-        new public JsonDecodingConfiguration<T> MapObject<TObject>(Action<JsonObjectMapping<TObject>> expression)
+        new public JsonDecodingConfiguration<T> MapType<TType>(Action<JsonObjectMapping<TType>> expression)
         {
-            return (JsonDecodingConfiguration<T>)base.MapObject<TObject>(expression);
+            return (JsonDecodingConfiguration<T>)base.MapType<TType>(expression);
         }
     }
 }
