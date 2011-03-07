@@ -65,6 +65,7 @@ namespace FluentJson.Example
             string json = encoder.Encode(input);
 
             Console.WriteLine(json);
+            System.IO.File.WriteAllText("output.txt", json);
             Console.ReadLine();
 
             // Construct the decoder
