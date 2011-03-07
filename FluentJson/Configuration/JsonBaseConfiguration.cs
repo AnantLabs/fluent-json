@@ -49,9 +49,9 @@ namespace FluentJson.Configuration
         /// </summary>
         /// <param name="expression">The object mapping expression.</param>
         /// <returns>The configuration.</returns>
-        public JsonBaseConfiguration<T> MapObject(Action<JsonObjectMapping<T>> expression)
+        public JsonBaseConfiguration<T> Map(Action<JsonObjectMapping<T>> expression)
         {
-            return MapObject<T>(expression);
+            return MapType<T>(expression);
         }
 
         /// <summary>
@@ -60,9 +60,9 @@ namespace FluentJson.Configuration
         /// <typeparam name="TObject">Type to map.</typeparam>
         /// <param name="expression">The object mapping expression.</param>
         /// <returns>The configuration.</returns>
-        public JsonBaseConfiguration<T> MapObject<TObject>(Action<JsonObjectMapping<TObject>> expression)
+        public JsonBaseConfiguration<T> MapType<TType>(Action<JsonObjectMapping<TType>> expression)
         {
-            Type type = typeof(TObject);
+            Type type = typeof(TType);
             if (type.IsInterface)
             {
                 throw new Exception();
@@ -70,10 +70,10 @@ namespace FluentJson.Configuration
 
             if (!Mappings.ContainsKey(type))
             {
-                this.Mappings.Add(type, new JsonObjectMapping<TObject>());
+                this.Mappings.Add(type, new JsonObjectMapping<TType>());
             }
 
-            expression((JsonObjectMapping<TObject>)this.Mappings[type]);
+            expression((JsonObjectMapping<TType>)this.Mappings[type]);
 
             return this;
         }

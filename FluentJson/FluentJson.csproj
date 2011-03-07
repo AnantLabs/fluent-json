@@ -48,6 +48,7 @@
     <Compile Include="JsonDecoder.cs" />
     <Compile Include="JsonEncoder.cs" />
     <Compile Include="JsonTokenType.cs" />
+    <Compile Include="Mapping\JsonFieldMapping.cs" />
     <Compile Include="Mapping\JsonObjectMapping.cs" />
     <Compile Include="Mapping\MappedDecoder.cs" />
     <Compile Include="Mapping\MappedEncoder.cs" />

@@ -88,7 +88,7 @@ namespace FluentJson
                 if (encoder(value, ref json, whiteSpace)) return encoder;
             }
 
-            throw new JsonEncodingException("Value could not be encoded.", value);
+            throw new JsonEncodingException("Value of type '" + value.GetType().Name + "' could not be encoded.", value);
         }
 
         #region Encoders

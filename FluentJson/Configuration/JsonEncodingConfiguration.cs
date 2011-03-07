@@ -50,20 +50,20 @@ namespace FluentJson.Configuration
         /// </summary>
         /// <param name="expression">The object mapping expression.</param>
         /// <returns>The configuration.</returns>
-        new public JsonEncodingConfiguration<T> MapObject(Action<JsonObjectMapping<T>> expression)
+        new public JsonEncodingConfiguration<T> Map(Action<JsonObjectMapping<T>> expression)
         {
-            return (JsonEncodingConfiguration<T>)base.MapObject<T>(expression);
+            return (JsonEncodingConfiguration<T>)base.Map(expression);
         }
 
         /// <summary>
         /// Returns a mapping expression for the type TObject.
         /// </summary>
-        /// <typeparam name="TObject">Type to map.</typeparam>
+        /// <typeparam name="TType">Type to map.</typeparam>
         /// <param name="expression">The object mapping expression.</param>
         /// <returns>The configuration.</returns>
-        new public JsonEncodingConfiguration<T> MapObject<TObject>(Action<JsonObjectMapping<TObject>> expression)
+        new public JsonEncodingConfiguration<T> MapType<TType>(Action<JsonObjectMapping<TType>> expression)
         {
-            return (JsonEncodingConfiguration<T>)base.MapObject<TObject>(expression);
+            return (JsonEncodingConfiguration<T>)base.MapType<TType>(expression);
         }
     }
 }
