@@ -41,16 +41,16 @@ namespace FluentJson.Mapping
         public MappedEncoder(JsonEncodingConfiguration<T> configuration)
         {
             _encoder = new JsonEncoder();
-            _encoder.IsTidy = configuration.UseTidy;
+            _encoder.IsTidy = configuration.UsesTidy;
             _configuration = configuration;
         }
 
         public string Encode(T value)
         {
-            return _encoder.Encode(_toEncodableValue(value));
+            return _encoder.Encode(_toEncodableValue(value, new ReferenceStore()));
         }
 
-        private IDictionary<string, object> _toDictionary(object value)
+        private IDictionary<string, object> _toDictionary(object value, ReferenceStore references)
         {
             Dictionary<string, object> result = new Dictionary<string,object>();
 
@@ -90,7 +90,7 @@ namespace FluentJson.Mapping
                     fieldValue = fieldMapping.Encode(fieldValue);
 
                     // Convert to encodable value
-                    fieldValue = _toEncodableValue(fieldValue);
+                    fieldValue = _toEncodableValue(fieldValue, references);
 
                     if (!result.ContainsKey(fieldMapping.JsonObjectField))
                     {
@@ -110,21 +110,33 @@ namespace FluentJson.Mapping
             return result;
         }
 
-        private object _toEncodableValue(object value)
+        private object _toEncodableValue(object value, ReferenceStore references)
         {
             if (value == null) return value;
 
             Type type = value.GetType();
             if (_configuration.Mappings.ContainsKey(type))
             {
-                return _toDictionary(value);
+                if (_configuration.Mappings[type].UsesReferencing)
+                {
+                    if (references.HasReferenceTo(value))
+                    {
+                        return references.GetReferenceTo(value);
+                    }
+                    else
+                    {
+                        references.StoreObject(value);
+                    }
+                }
+
+                return _toDictionary(value, references);
             }
             else if (value is IList)
             {
                 List<object> list = new List<object>();
                 foreach (object element in (value as IList))
                 {
-                    list.Add(_toEncodableValue(element));
+                    list.Add(_toEncodableValue(element, references));
                 }
 
                 return list;
@@ -140,7 +152,7 @@ namespace FluentJson.Mapping
                         throw new Exception("Dictionary key '" + enumerator.Key + "; is not of type String.");
                     }
 
-                    dictionary.Add((string)enumerator.Key, _toEncodableValue(enumerator.Value));
+                    dictionary.Add((string)enumerator.Key, _toEncodableValue(enumerator.Value, references));
                 }
             }
 

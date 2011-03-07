@@ -51,7 +51,7 @@ namespace FluentJson.Mapping
             object decoded = _decoder.Decode(json);
 
             // Convert
-            return (T)_toDesiredValue(decoded, typeof(T));
+            return (T)_toDesiredValue(decoded, typeof(T), new ReferenceStore());
         }
 
         /// <summary>
@@ -60,7 +60,7 @@ namespace FluentJson.Mapping
         /// <param name="value"></param>
         /// <param name="desiredValueType"></param>
         /// <returns></returns>
-        private object _toDesiredValue(object value, Type desiredValueType)
+        private object _toDesiredValue(object value, Type desiredValueType, ReferenceStore references)
         {
             if (value == null)
             {
@@ -76,11 +76,30 @@ namespace FluentJson.Mapping
 
             if (_configuration.Mappings.ContainsKey(desiredValueType))
             {
+                if (_configuration.Mappings[desiredValueType].UsesReferencing && value is double)
+                {
+                    if (references.IsReference((double)value))
+                    {
+                        return references.GetFromReference((double)value);
+                    }
+                    else
+                    {
+                        throw new Exception("Decoded value (" + value + ") is an invalid reference to'" + desiredValueType.Name + "'.");
+                    }
+                }
+
                 // Desired type has been mapped, use this mapping.
                 object result = Activator.CreateInstance(desiredValueType);
+
+                if (_configuration.Mappings[desiredValueType].UsesReferencing)
+                {
+                    references.StoreObject(result);
+                }
+
+
                 if (value is IDictionary<string, object>)
                 {
-                    _transferDictionary((IDictionary<string, object>)value, result);
+                    _transferDictionary((IDictionary<string, object>)value, result, references);
                     return result;
                 }
                 else
@@ -117,14 +136,7 @@ namespace FluentJson.Mapping
                         {
                             foreach (object element in (value as IList))
                             {
-                                if (genericArguments[0].IsAssignableFrom(element.GetType()))
-                                {
-                                    list.Add(element);
-                                }
-                                else
-                                {
-                                    throw new Exception("Decoded value (" + element + ") could not be converted to List element type '" + genericArguments[0].Name +"'.");
-                                }
+                                list.Add(_toDesiredValue(element, genericArguments[0], references));
                             }
 
                             return list;
@@ -152,14 +164,7 @@ namespace FluentJson.Mapping
                             IDictionaryEnumerator enumerator = (value as IDictionary).GetEnumerator();
                             while (enumerator.MoveNext())
                             {
-                                if (genericArguments[1].IsAssignableFrom(enumerator.Value.GetType()))
-                                {
-                                    dict.Add(enumerator.Key, enumerator.Value);
-                                }
-                                else
-                                {
-                                    throw new Exception("Decoded value (" + enumerator.Value + ") could not be converted to Dictionary value type '" + genericArguments[1].Name + "'.");
-                                }
+                                dict.Add(enumerator.Key, _toDesiredValue(enumerator.Value, genericArguments[1], references));
                             }
 
                             return dict;
@@ -192,7 +197,7 @@ namespace FluentJson.Mapping
             throw new Exception("Decoded value (" + value + ") could not be converted to type '" + desiredValueType.Name + "'.");
         }
 
-        private void _transferDictionary(IDictionary<string, object> dictionary, object target)
+        private void _transferDictionary(IDictionary<string, object> dictionary, object target, ReferenceStore references)
         {
             if (_configuration.Mappings.ContainsKey(target.GetType()))
             {
@@ -207,7 +212,7 @@ namespace FluentJson.Mapping
                         MemberInfo memberInfo = fieldMappings.Current.Key;
 
                         // Convert to decodable value
-                        object fieldValue = _toDesiredValue(dictionary[fieldMapping.JsonObjectField], fieldMapping.DesiredType);
+                        object fieldValue = _toDesiredValue(dictionary[fieldMapping.JsonObjectField], fieldMapping.DesiredType, references);
 
                         // Pass trough (possible) fieldmapping decoder
                         fieldValue = fieldMapping.Decode(fieldValue);

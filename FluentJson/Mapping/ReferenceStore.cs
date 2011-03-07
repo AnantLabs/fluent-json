@@ -25,45 +25,52 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Reflection;
 
-using FluentJson.Mapping;
+using FluentJson.Configuration;
 
-namespace FluentJson.Configuration
+namespace FluentJson.Mapping
 {
-    public class JsonEncodingConfiguration<T> : JsonBaseConfiguration<T>
+    internal class ReferenceStore
     {
-        internal bool UsesTidy { get; private set; }
+        private Dictionary<object, double> _references;
+        private Dictionary<double, object> _objects;
 
-        /// <summary>
-        /// Enables or disables tidy encoding.
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public JsonEncodingConfiguration<T> UseTidy(bool value)
+        internal ReferenceStore()
         {
-            this.UsesTidy = value;
-            return this;
+            _references = new Dictionary<object, double>();
+            _objects = new Dictionary<double, object>();
         }
 
-        /// <summary>
-        /// Returns a mapping expression for the root type.
-        /// </summary>
-        /// <param name="expression">The object mapping expression.</param>
-        /// <returns>The configuration.</returns>
-        new public JsonEncodingConfiguration<T> Map(Action<JsonObjectMapping<T>> expression)
+        internal void StoreObject(object value)
         {
-            return (JsonEncodingConfiguration<T>)base.Map(expression);
+            if (!_references.ContainsKey(value))
+            {
+                _references.Add(value, _references.Count);
+                _objects.Add(_objects.Count, value);
+            }
         }
 
-        /// <summary>
-        /// Returns a mapping expression for the type TObject.
-        /// </summary>
-        /// <typeparam name="TType">Type to map.</typeparam>
-        /// <param name="expression">The object mapping expression.</param>
-        /// <returns>The configuration.</returns>
-        new public JsonEncodingConfiguration<T> MapType<TType>(Action<JsonObjectMapping<TType>> expression)
+        internal bool HasReferenceTo(object value)
         {
-            return (JsonEncodingConfiguration<T>)base.MapType<TType>(expression);
+            return _references.ContainsKey(value);
+        }
+
+        internal double GetReferenceTo(object value)
+        {
+            return _references[value];
+        }
+
+        internal bool IsReference(double value)
+        {
+            return _objects.ContainsKey(value);
+        }
+
+        internal object GetFromReference(double value)
+        {
+            return _objects[value];
         }
     }
 }

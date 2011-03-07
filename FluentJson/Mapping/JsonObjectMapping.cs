@@ -34,6 +34,7 @@ namespace FluentJson.Mapping
 {
     public class JsonObjectMappingBase
     {
+        internal bool UsesReferencing { get; set; }
         internal Dictionary<MemberInfo, JsonFieldMappingBase> FieldMappings { get; private set; }
         internal JsonObjectMappingBase()
         {
@@ -48,6 +49,12 @@ namespace FluentJson.Mapping
         internal JsonObjectMapping()
         {
             _exludes = new List<MemberInfo>();
+        }
+
+        public JsonObjectMapping<T> UseReferencing(bool value)
+        {
+            this.UsesReferencing = value;
+            return this;
         }
 
         public JsonObjectMapping<T> AllFields()
@@ -126,6 +133,23 @@ namespace FluentJson.Mapping
                 }
                 else
                 {
+                    // Mismatch could have occured (due to different MemberInfo.ReflectedType)
+                    MemberInfo overriden = null;
+                    foreach (MemberInfo key in this.FieldMappings.Keys)
+                    {
+                        if (key.Name == memberInfo.Name)
+                        {
+                            overriden = key;
+                            break;
+                        }
+                    }
+                    
+                    // Remove deprecated entry
+                    if (overriden != null)
+                    {
+                        this.FieldMappings.Remove(overriden);
+                    }
+
                     this.FieldMappings.Add(memberInfo, fieldMapping);
                 }
             }

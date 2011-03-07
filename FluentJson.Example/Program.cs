@@ -47,7 +47,7 @@ namespace FluentJson.Example
                 .MapType<Author>(map => map
                     .AllFields()
                 )
-                .Tidy(true)
+                .UseTidy(true)
             );
 
             // Construct input
