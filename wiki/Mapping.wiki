@@ -40,7 +40,6 @@ IJsonEncoder<Book> encoder = Json.EncoderFor<Book>(config => config
 {{{
 IJsonEncoder<Book> encoder = Json.EncoderFor<Book>(config => config
     .Map(map => map
-        .AllFields()
         .FieldTo(book => book.author, "book_author")
     )
 );
@@ -52,7 +51,6 @@ Mapping a DateTime property to an encoder:
 {{{
 IJsonEncoder<Book> encoder = Json.EncoderFor<Book>(config => config
     .Map(map => map
-        .AllFields()
         .Field<DateTime>(book => book.pubDate, pubDate => pubDate
             .EncodeAs<string>(value => value.ToShortDateString())
         )
@@ -64,7 +62,6 @@ Mapping a DateTime property to a decoder:
 {{{
 IJsonDecoder<Book> decoder = Json.DecoderFor<Book>(config => config
     .Map(map => map
-        .AllFields()
         .Field<DateTime>(book => book.pubDate, pubDate => pubDate
             .DecodeAs<string>(value => DateTime.Parse(value))
         )
@@ -79,7 +76,6 @@ This is a handy way to handle enums:
 {{{
 IJsonEncoder<Book> encoder = Json.EncoderFor<Book>(config => config
     .Map(map => map
-        .AllFields()
         .Field<BookType>(book => book.type, type => type
             .EncodeAs<int>(value => (int)value)
         )
@@ -90,7 +86,6 @@ IJsonEncoder<Book> encoder = Json.EncoderFor<Book>(config => config
 {{{
 IJsonDecoder<Book> decoder = Json.DecoderFor<Book>(config => config
     .Map(map => map
-        .AllFields()
         .Field<BookType>(book => book.type, type => type
             .DecodeAs<int>(value => (BookType)Enum.ToObject(typeof(BookType), value))
         )
@@ -105,7 +100,6 @@ If either desired or required (to prevent infinite encoding of references), you 
 {{{
 IJsonEncoder<Book> encoder = Json.EncoderFor<Book>(config => config
     .Map(map => map
-        .AllFields()
         .UseReferencing(true)
     )
 );
