@@ -64,20 +64,42 @@ namespace FluentJson.Configuration
         /// <returns>The configuration.</returns>
         public JsonBaseConfiguration<T> MapType<TType>(Action<JsonObjectMapping<TType>> expression)
         {
-            Type type = typeof(TType);
-            if (type.IsInterface)
-            {
-                throw new Exception();
-            }
+            JsonObjectMapping<TType> mapping = new JsonObjectMapping<TType>();
+            expression(mapping);
 
-            if (!Mappings.ContainsKey(type))
-            {
-                this.Mappings.Add(type, new JsonObjectMapping<TType>());
-            }
-
-            expression((JsonObjectMapping<TType>)this.Mappings[type]);
-
+            _addMapping(mapping);
             return this;
+        }
+
+        /// <summary>
+        /// Returns a mapping expression for the root type.
+        /// </summary>
+        /// <param name="expression">The object mapping expression.</param>
+        /// <returns>The configuration.</returns>
+        public JsonBaseConfiguration<T> WithMapping(JsonObjectMappingBase mapping)
+        {
+            _addMapping(mapping);
+            return this;
+        }
+
+        private void _addMapping(JsonObjectMappingBase mapping)
+        {
+            Type type = mapping.GetType().GetGenericArguments()[0];
+            if (!type.IsInterface)
+            {
+                if (!Mappings.ContainsKey(type))
+                {
+                    this.Mappings.Add(type, mapping);
+                }
+                else
+                {
+                    throw new Exception("A mapping for type '" + type.Name + "' already exists.");
+                }
+            }
+            else
+            {
+                throw new Exception("Interfaces cannot be mapped.");
+            }
         }
     }
 }

@@ -76,9 +76,9 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\FluentJson\FluentJson.csproj">
+    <ProjectReference Include="..\FluentJson\FluentJson-Net4.0.csproj">
       <Project>{E4CBC5EF-B060-458B-8AE7-C561AAFBE46E}</Project>
-      <Name>FluentJson</Name>
+      <Name>FluentJson-Net4.0</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />

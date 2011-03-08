@@ -48,7 +48,7 @@ namespace FluentJson.Mapping
     {
         private List<MemberInfo> _exludes;
 
-        internal JsonObjectMapping()
+        public JsonObjectMapping()
         {
             _exludes = new List<MemberInfo>();
         }

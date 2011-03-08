@@ -239,9 +239,17 @@ namespace FluentJson
 
         private bool _encodeObject(object value, ref string json, JsonWhiteSpaceState whiteSpace)
         {
+            #if NET40
+            if (!(value is IDictionary<string, object>)) return false;
+            #else
             if (!(value is IDictionary)) return false;
+            #endif
 
+            #if NET40
+            IDictionary<string, object> dict = (IDictionary<string, object>)value;
+            #else
             IDictionary dict = (IDictionary)value;
+            #endif
 
             // Begin object
             json += JsonTokenType.ObjectStart;
@@ -255,7 +263,13 @@ namespace FluentJson
 
             int i = 0;
 
+            #if NET40
+            IEnumerator<KeyValuePair<string, object>> enumerator = dict.GetEnumerator();
+            #else
             IDictionaryEnumerator enumerator = dict.GetEnumerator();
+            #endif
+
+            
             while (enumerator.MoveNext())
             {
                 // Tidy printing
@@ -265,7 +279,11 @@ namespace FluentJson
                 }
 
                 // Encode child node field
+                #if NET40
+                if (_encodeNextToken(enumerator.Current.Key, ref json, whiteSpace) != _encodeString)
+                #else
                 if (_encodeNextToken(enumerator.Key, ref json, whiteSpace) != _encodeString)
+                #endif
                 {
                     // The string encoder should have been used.
                     // Since it wasn't, this is not a string.
@@ -285,11 +303,19 @@ namespace FluentJson
                 if (this.IsTidy)
                 {
                     json += CHAR_SPACE;
+                    #if NET40
+                    whiteSpace.BeginInset(0, (enumerator.Current.Key as string).Length + 6);
+                    #else
                     whiteSpace.BeginInset(0, (enumerator.Key as string).Length + 6);
+                    #endif
                 }
 
                 // Encode child node value
+                #if NET40
+                _encodeNextToken(enumerator.Current.Value, ref json, whiteSpace);
+                #else
                 _encodeNextToken(enumerator.Value, ref json, whiteSpace);
+                #endif
 
                 // Append seperator for next child node
                 if (i + 1 < dict.Count)
