@@ -70,6 +70,7 @@ IJsonDecoder<Book> decoder = Json.DecoderFor<Book>(config => config
         )
     )
 );
+}}}
 
 === Handling enums ===
 
@@ -95,3 +96,4 @@ IJsonDecoder<Book> decoder = Json.DecoderFor<Book>(config => config
         )
     )
 );
+}}}
