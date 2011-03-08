@@ -1,1 +1,1 @@
-#Everything is thread safe!
+=Everything is thread safe!=
