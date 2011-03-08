@@ -23,3 +23,14 @@ IJsonEncoder<Book> encoder = Json.EncoderFor<Book>(config => config
     )
 );
 }}}
+
+== Excluding certain fields ==
+
+{{{
+IJsonEncoder<Book> encoder = Json.EncoderFor<Book>(config => config
+    .Map(map => map
+        .AllFields()
+        .ExceptField(book => book.author)
+    )
+);
+}}}
