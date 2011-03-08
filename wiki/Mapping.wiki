@@ -35,7 +35,7 @@ IJsonEncoder<Book> encoder = Json.EncoderFor<Book>(config => config
 );
 }}}
 
-== Map to a specific field name ==
+== Maping to a specific field name ==
 
 {{{
 IJsonEncoder<Book> encoder = Json.EncoderFor<Book>(config => config
@@ -46,14 +46,27 @@ IJsonEncoder<Book> encoder = Json.EncoderFor<Book>(config => config
 );
 }}}
 
-== Map to a string ==
+== Mapping to a different type ==
 
+Mapping a DateTime property to an encoder:
 {{{
 IJsonEncoder<Book> encoder = Json.EncoderFor<Book>(config => config
     .Map(map => map
         .AllFields()
         .Field(book => book.pubDate, pubDate => pubDate
             .EncodeAs<string>(value => value.ToShortDateString())
+        )
+    )
+);
+}}}
+
+Mapping a DateTime property to a decoder:
+{{{
+IJsonDecoder<Book> decoder = Json.DecoderFor<Book>(config => config
+    .Map(map => map
+        .AllFields()
+        .Field(book => book.pubDate, pubDate => pubDate
+            .DecodeAs(value => DateTime.Parse(value))
         )
     )
 );
