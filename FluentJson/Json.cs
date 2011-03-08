@@ -26,8 +26,10 @@
 
 using System;
 
+#if !NET20
 using FluentJson.Configuration;
 using FluentJson.Mapping;
+#endif
 
 namespace FluentJson
 {
@@ -50,6 +52,8 @@ namespace FluentJson
             return _defaultEncoder.Encode(value);
         }
 
+        #if !NET20
+
         /// <summary>
         /// Returns a json encoder for the specified configuration.
         /// </summary>
@@ -64,6 +68,8 @@ namespace FluentJson
             return new MappedEncoder<T>(configuration);
         }
 
+        #endif
+
         /// <summary>
         /// Decodes a json string.
         /// </summary>
@@ -74,6 +80,8 @@ namespace FluentJson
             if(_defaultDecoder == null) _defaultDecoder = new JsonDecoder();
             return _defaultDecoder.Decode(json);
         }
+
+        #if !NET20
 
         /// <summary>
         ///  Returns a json decoder for the specified configuration.
@@ -88,6 +96,8 @@ namespace FluentJson
 
             return new MappedDecoder<T>(configuration);
         }
+
+        #endif
     }
 
     /// <summary>
