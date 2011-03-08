@@ -53,7 +53,7 @@ Mapping a DateTime property to an encoder:
 IJsonEncoder<Book> encoder = Json.EncoderFor<Book>(config => config
     .Map(map => map
         .AllFields()
-        .Field(book => book.pubDate, pubDate => pubDate
+        .Field<DateTime>(book => book.pubDate, pubDate => pubDate
             .EncodeAs<string>(value => value.ToShortDateString())
         )
     )
@@ -65,9 +65,33 @@ Mapping a DateTime property to a decoder:
 IJsonDecoder<Book> decoder = Json.DecoderFor<Book>(config => config
     .Map(map => map
         .AllFields()
-        .Field(book => book.pubDate, pubDate => pubDate
-            .DecodeAs(value => DateTime.Parse(value))
+        .Field<DateTime>(book => book.pubDate, pubDate => pubDate
+            .DecodeAs<string>(value => DateTime.Parse(value))
+        )
+    )
+);
+
+=== Handling enums ===
+
+This is a handy way to handle enums:
+
+{{{
+IJsonEncoder<Book> encoder = Json.EncoderFor<Book>(config => config
+    .Map(map => map
+        .AllFields()
+        .Field<BookType>(book => book.type, type => type
+            .EncodeAs<int>(value => (int)value)
         )
     )
 );
 }}}
+
+{{{
+IJsonDecoder<Book> decoder = Json.DecoderFor<Book>(config => config
+    .Map(map => map
+        .AllFields()
+        .Field<BookType>(book => book.type, type => type
+            .DecodeAs<int>(value => (BookType)Enum.ToObject(typeof(BookType), value))
+        )
+    )
+);
