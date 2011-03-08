@@ -1,13 +1,25 @@
 = Introduction =
 
 Encoders and decoders in Fluent Json enable you to strongly type map your classes to the json data format. This mapping behaviour 
-can (and often should) be fully defined by you. An important design choice was not to add extensions to the json data format. Basic .Net datatypes such as enums and for instance DateTime, will not be encoded (unless mapped).
-
-
+can (and often should) be fully defined by you. An important design choice was not to add extensions to the json data format. Basic .Net datatypes such as enums and for instance DateTime, will fail to encode(unless mapped).
 
 = Details =
 
-Add your content here.  Format your content with:
-  * Text in *bold* or _italic_
-  * Headings, paragraphs, and lists
-  * Automatic links to other wiki pages
+== Constructing an encoder ==
+
+{{{
+IJsonDecoder<Book> decoder = Json.DecoderFor<Book>(config => config
+    .Map(map => map
+        .AllFields()
+        .Field<DateTime>(book => book.pubDate, pubDate => pubDate
+            .DecodeAs<string>(date => DateTime.Parse(date))
+        )
+        .Field<BookType>(book => book.type, type => type
+            .DecodeAs<int>(value => (BookType)Enum.ToObject(typeof(BookType), value))
+        )
+    )
+    .MapType<Author>(map => map
+        .AllFields()
+    )
+);
+}}}
