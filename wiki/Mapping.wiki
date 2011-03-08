@@ -5,7 +5,16 @@ can (and often should) be fully defined by you. An important design choice was n
 
 = Details =
 
-== Constructing an encoder ==
+== Constructing an encoder or decoder ==
+
+{{{
+IJsonEncoder<Book> encoder = Json.EncoderFor<Book>(config => config
+    .Map(map => map)
+);
+}}}
+
+
+== Mapping all fields at once ==
 
 {{{
 IJsonEncoder<Book> encoder = Json.EncoderFor<Book>(config => config
