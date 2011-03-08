@@ -56,12 +56,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\FluentJson\FluentJson.csproj">
-      <Project>{E4CBC5EF-B060-458B-8AE7-C561AAFBE46E}</Project>
-      <Name>FluentJson</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="JsonData\String3.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -80,6 +74,12 @@
     <Content Include="JsonData\String1.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\FluentJson\FluentJson.csproj">
+      <Project>{E4CBC5EF-B060-458B-8AE7-C561AAFBE46E}</Project>
+      <Name>FluentJson</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
