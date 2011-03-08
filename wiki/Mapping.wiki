@@ -34,3 +34,15 @@ IJsonEncoder<Book> encoder = Json.EncoderFor<Book>(config => config
     )
 );
 }}}
+
+== Map to a specific field name ==
+
+
+{{{
+IJsonEncoder<Book> encoder = Json.EncoderFor<Book>(config => config
+    .Map(map => map
+        .AllFields()
+        .FieldTo(book => book.author, "book_author")
+    )
+);
+}}}
