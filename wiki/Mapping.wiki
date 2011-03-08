@@ -8,17 +8,8 @@ can (and often should) be fully defined by you. An important design choice was n
 == Constructing an encoder ==
 
 {{{
-IJsonDecoder<Book> decoder = Json.DecoderFor<Book>(config => config
+IJsonEncoder<Book> encoder = Json.EncoderFor<Book>(config => config
     .Map(map => map
-        .AllFields()
-        .Field<DateTime>(book => book.pubDate, pubDate => pubDate
-            .DecodeAs<string>(date => DateTime.Parse(date))
-        )
-        .Field<BookType>(book => book.type, type => type
-            .DecodeAs<int>(value => (BookType)Enum.ToObject(typeof(BookType), value))
-        )
-    )
-    .MapType<Author>(map => map
         .AllFields()
     )
 );
