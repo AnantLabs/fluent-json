@@ -29,6 +29,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 
+#if NET40
+using System.Dynamic;
+#endif
+
 using FluentJson.Exceptions;
 
 namespace FluentJson
@@ -287,8 +291,11 @@ namespace FluentJson
         {
             if (json[0] != JsonTokenType.ObjectStart) return false;
 
+            #if NET40
+            IDictionary<string, object> dict = new ExpandoObject();
+            #else
             Dictionary<string, object> dict = new Dictionary<string, object>();
-            decoded = dict;
+            #endif
 
             json = json.Substring(1);
             while (json.Length > 0)
@@ -299,6 +306,7 @@ namespace FluentJson
                 JsonTokenDecoder decoder = _decodeNextToken(ref json, ref fieldName);
                 if (decoder == _decodeObjectEnd)
                 {
+                    decoded = dict;
                     return true;
                 }
                 else if (dict.Count > 0)
@@ -362,7 +370,6 @@ namespace FluentJson
 
             json = json.Substring(1);
             decoded = JsonTokenType.PairSeperator;
-            json = json.Substring(1);
 
             return true;
         }

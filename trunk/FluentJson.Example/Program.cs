@@ -41,7 +41,10 @@ namespace FluentJson.Example
                 .Map(map => map
                     .AllFields()
                     .Field<DateTime>(book => book.pubDate, pubDate => pubDate
-                        .EncodeAs<string>(date => date.ToShortDateString())
+                        .EncodeAs<string>(value => value.ToShortDateString())
+                    )
+                    .Field<BookType>(book => book.type, type => type
+                        .EncodeAs<int>(value => (int)value)
                     )
                 )
                 .MapType<Author>(map => map
@@ -56,6 +59,7 @@ namespace FluentJson.Example
             input.tags = new List<string> { "traveling", "adventure" };
             input.pubDate = DateTime.Today;
             input.numPages = 342;
+            input.type = BookType.Roman;
 
             input.author = new Author();
             input.author.forname = "Jules";
@@ -65,7 +69,6 @@ namespace FluentJson.Example
             string json = encoder.Encode(input);
 
             Console.WriteLine(json);
-            System.IO.File.WriteAllText("output.txt", json);
             Console.ReadLine();
 
             // Construct the decoder
@@ -74,6 +77,9 @@ namespace FluentJson.Example
                     .AllFields()
                     .Field<DateTime>(book => book.pubDate, pubDate => pubDate
                         .DecodeAs<string>(date => DateTime.Parse(date))
+                    )
+                    .Field<BookType>(book => book.type, type => type
+                        .DecodeAs<int>(value => (BookType)Enum.ToObject(typeof(BookType), value))
                     )
                 )
                 .MapType<Author>(map => map
@@ -90,9 +96,16 @@ namespace FluentJson.Example
         }
     }
 
+    enum BookType
+    {
+        Novel, Roman
+    }
+
     class Book
     {
         public string title { get; set; }
+        public BookType type { get; set; }
+
         public DateTime pubDate { get; set; }
         public int numPages { get; set; }
         public IList<string> tags { get; set; }
