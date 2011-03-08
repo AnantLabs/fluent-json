@@ -97,3 +97,16 @@ IJsonDecoder<Book> decoder = Json.DecoderFor<Book>(config => config
     )
 );
 }}}
+
+== Mapping references ==
+
+If either desired or required (to prevent infinite encoding of references), you can indicate the mapper to encode references instead of objects.
+
+{{{
+IJsonEncoder<Book> encoder = Json.EncoderFor<Book>(config => config
+    .Map(map => map
+        .AllFields()
+        .UseReferencing(true)
+    )
+);
+}}}
