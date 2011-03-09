@@ -1,3 +1,5 @@
+#summary Explains how to map your classes.
+
 = Introduction =
 
 Encoders and decoders in Fluent Json enable you to strongly type map your classes to the json data format. This mapping behaviour 
