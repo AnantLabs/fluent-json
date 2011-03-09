@@ -1,0 +1,12 @@
+#How to handle strongly typed collections
+
+= Details =
+
+== Decoding a collection of types ==
+{{{
+IJsonDecoder<IList<Book>> decoder = Json.DecoderFor<IList<Book>>(config => config
+    .MapType<Book>(map => map
+        .AllFields()
+    )
+);
+}}}
