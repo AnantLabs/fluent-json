@@ -37,13 +37,31 @@ namespace FluentJson.Configuration
     /// Configuration for both encoding and decoding.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class JsonBaseConfiguration<T>
+    public class JsonConfiguration<T>
     {
         internal Dictionary<Type, JsonObjectMappingBase> Mappings { get; private set; }
 
-        internal JsonBaseConfiguration()
+        internal JsonConfiguration()
         {
             this.Mappings = new Dictionary<Type, JsonObjectMappingBase>();
+        }
+
+        /// <summary>
+        /// Derives this configuration from an existing configuration.
+        /// </summary>
+        /// <param name="configuration">The configuration to derive from.</param>
+        /// <returns>The configuration.</returns>
+        public JsonConfiguration<T> DeriveFrom(JsonConfiguration<T> configuration)
+        {
+            this.Mappings = new Dictionary<Type, JsonObjectMappingBase>();
+
+            Dictionary<Type, JsonObjectMappingBase>.Enumerator enumerator = configuration.Mappings.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                _addMapping((JsonObjectMappingBase)enumerator.Current.Value.Clone());
+            }
+
+            return this;
         }
 
         /// <summary>
@@ -51,7 +69,7 @@ namespace FluentJson.Configuration
         /// </summary>
         /// <param name="expression">The object mapping expression.</param>
         /// <returns>The configuration.</returns>
-        public JsonBaseConfiguration<T> Map(Action<JsonObjectMapping<T>> expression)
+        public JsonConfiguration<T> Map(Action<JsonObjectMapping<T>> expression)
         {
             return MapType<T>(expression);
         }
@@ -62,12 +80,21 @@ namespace FluentJson.Configuration
         /// <typeparam name="TObject">Type to map.</typeparam>
         /// <param name="expression">The object mapping expression.</param>
         /// <returns>The configuration.</returns>
-        public JsonBaseConfiguration<T> MapType<TType>(Action<JsonObjectMapping<TType>> expression)
+        public JsonConfiguration<T> MapType<TType>(Action<JsonObjectMapping<TType>> expression)
         {
-            JsonObjectMapping<TType> mapping = new JsonObjectMapping<TType>();
-            expression(mapping);
+            JsonObjectMapping<TType> mapping = null;
+            if (!this.Mappings.ContainsKey(typeof(TType)))
+            {
+                mapping = new JsonObjectMapping<TType>();
+                _addMapping(mapping);
+            }
+            else
+            {
+                mapping = (JsonObjectMapping<TType>)this.Mappings[typeof(TType)];
+            }
 
-            _addMapping(mapping);
+
+            expression(mapping);
             return this;
         }
 
@@ -76,7 +103,7 @@ namespace FluentJson.Configuration
         /// </summary>
         /// <param name="expression">The object mapping expression.</param>
         /// <returns>The configuration.</returns>
-        public JsonBaseConfiguration<T> WithMapping(JsonObjectMappingBase mapping)
+        public JsonConfiguration<T> WithMapping(JsonObjectMappingBase mapping)
         {
             _addMapping(mapping);
             return this;

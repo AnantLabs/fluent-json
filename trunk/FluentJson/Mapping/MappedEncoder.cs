@@ -38,7 +38,7 @@ namespace FluentJson.Mapping
     class MappedEncoder<T> : IJsonEncoder<T>
     {
         private JsonEncoder _encoder;
-        private JsonBaseConfiguration<T> _configuration;
+        private JsonConfiguration<T> _configuration;
 
         public MappedEncoder(JsonEncodingConfiguration<T> configuration)
         {

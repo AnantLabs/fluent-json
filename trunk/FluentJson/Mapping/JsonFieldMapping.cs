@@ -33,13 +33,15 @@ using System.Reflection;
 
 namespace FluentJson.Mapping
 {
-    public abstract class JsonFieldMappingBase
+    abstract public class JsonFieldMappingBase : ICloneable
     {
         internal string JsonObjectField { get; set; }
         internal Type DesiredType { get; set; }
 
         abstract internal object Encode(object value);
         abstract internal object Decode(object value);
+
+        abstract public object Clone();
     }
 
     public class JsonFieldMapping<T> : JsonFieldMappingBase
@@ -68,6 +70,19 @@ namespace FluentJson.Mapping
             {
                 this.DesiredType = typeof(T);
             }
+        }
+
+        public override object Clone()
+        {
+            JsonFieldMapping<T> clone = new JsonFieldMapping<T>(_memberInfo);
+
+            clone._decodeAs = _decodeAs;
+            clone._encodeAs = _encodeAs;
+
+            clone.JsonObjectField = this.JsonObjectField;
+            clone.DesiredType = this.DesiredType;
+
+            return clone;
         }
 
         internal JsonFieldMapping(MemberInfo memberInfo, string jsonObjectField) : this (memberInfo)

@@ -39,9 +39,9 @@ namespace FluentJson.Mapping
     internal class MappedDecoder<T> : IJsonDecoder<T>
     {
         private JsonDecoder _decoder;
-        private JsonBaseConfiguration<T> _configuration;
+        private JsonConfiguration<T> _configuration;
 
-        internal MappedDecoder(JsonBaseConfiguration<T> configuration)
+        internal MappedDecoder(JsonConfiguration<T> configuration)
         {
             _decoder = new JsonDecoder();
             _configuration = configuration;
