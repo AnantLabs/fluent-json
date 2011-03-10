@@ -68,6 +68,18 @@ namespace FluentJson
             return new MappedEncoder<T>(configuration);
         }
 
+        /// <summary>
+        /// Returns a json encoder for the specified configuration.
+        /// </summary>
+        /// <typeparam name="T">Type to encode.</typeparam>
+        /// <returns>An encoder for type T.</returns>
+        static public IJsonEncoder<T> EncoderFor<T>()
+        {
+            JsonEncodingConfiguration<T> configuration = new JsonEncodingConfiguration<T>();
+
+            return new MappedEncoder<T>(configuration);
+        }
+
         #endif
 
         /// <summary>
@@ -95,6 +107,28 @@ namespace FluentJson
             expression(configuration);
 
             return new MappedDecoder<T>(configuration);
+        }
+
+        /// <summary>
+        ///  Returns a json decoder for the specified configuration.
+        /// </summary>
+        /// <typeparam name="T">Type to decode.</typeparam>
+        /// <returns>A decoder for type T.</returns>
+        static public IJsonDecoder<T> DecoderFor<T>()
+        {
+            JsonDecodingConfiguration<T> configuration = new JsonDecodingConfiguration<T>();
+            return new MappedDecoder<T>(configuration);
+        }
+
+        /// <summary>
+        /// Returns a configuration for the specified type T.
+        /// </summary>
+        /// <typeparam name="T">Type to create configuration for.</typeparam>
+        /// <returns>A configuration for type T.</returns>
+        static public JsonConfiguration<T> ConfigurationFor<T>()
+        {
+            JsonDecodingConfiguration<T> configuration = new JsonDecodingConfiguration<T>();
+            return configuration;
         }
 
         #endif

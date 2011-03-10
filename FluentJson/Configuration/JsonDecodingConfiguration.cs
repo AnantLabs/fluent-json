@@ -32,7 +32,7 @@ using FluentJson.Mapping;
 
 namespace FluentJson.Configuration
 {
-    public class JsonDecodingConfiguration<T> : JsonBaseConfiguration<T>
+    public class JsonDecodingConfiguration<T> : JsonConfiguration<T>
     {
         /// <summary>
         /// Returns a mapping expression for the root type.
@@ -53,6 +53,11 @@ namespace FluentJson.Configuration
         new public JsonDecodingConfiguration<T> MapType<TType>(Action<JsonObjectMapping<TType>> expression)
         {
             return (JsonDecodingConfiguration<T>)base.MapType<TType>(expression);
+        }
+
+        public JsonDecodingConfiguration<T> DeriveFrom(JsonConfiguration<T> configuration)
+        {
+            return (JsonDecodingConfiguration<T>)base.DeriveFrom(configuration);
         }
     }
 }

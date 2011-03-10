@@ -34,7 +34,7 @@ using System.Reflection;
 
 namespace FluentJson.Mapping
 {
-    public class JsonObjectMappingBase
+    abstract public class JsonObjectMappingBase : ICloneable
     {
         internal bool UsesReferencing { get; set; }
         internal Dictionary<MemberInfo, JsonFieldMappingBase> FieldMappings { get; private set; }
@@ -42,6 +42,8 @@ namespace FluentJson.Mapping
         {
             this.FieldMappings = new Dictionary<MemberInfo, JsonFieldMappingBase>();
         }
+
+        abstract public object Clone();
     }
 
     public class JsonObjectMapping<T> : JsonObjectMappingBase
@@ -51,6 +53,25 @@ namespace FluentJson.Mapping
         public JsonObjectMapping()
         {
             _exludes = new List<MemberInfo>();
+        }
+
+        public override object Clone()
+        {
+            JsonObjectMapping<T> clone = new JsonObjectMapping<T>();
+            clone.UsesReferencing = this.UsesReferencing;
+
+            Dictionary<MemberInfo, JsonFieldMappingBase>.Enumerator enumerator = this.FieldMappings.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                clone.FieldMappings.Add(enumerator.Current.Key, (JsonFieldMappingBase)enumerator.Current.Value.Clone());
+            }
+
+            foreach(MemberInfo exclude in _exludes)
+            {
+                clone._exludes.Add(exclude);
+            }
+
+            return clone;
         }
 
         public JsonObjectMapping<T> UseReferencing(bool value)

@@ -32,7 +32,7 @@ using FluentJson.Mapping;
 
 namespace FluentJson.Configuration
 {
-    public class JsonEncodingConfiguration<T> : JsonBaseConfiguration<T>
+    public class JsonEncodingConfiguration<T> : JsonConfiguration<T>
     {
         internal bool UsesTidy { get; private set; }
 
@@ -66,6 +66,11 @@ namespace FluentJson.Configuration
         new public JsonEncodingConfiguration<T> MapType<TType>(Action<JsonObjectMapping<TType>> expression)
         {
             return (JsonEncodingConfiguration<T>)base.MapType<TType>(expression);
+        }
+
+        public JsonEncodingConfiguration<T> DeriveFrom(JsonConfiguration<T> configuration)
+        {
+            return (JsonEncodingConfiguration<T>)base.DeriveFrom(configuration);
         }
     }
 }
