@@ -156,6 +156,8 @@ namespace FluentJson.Mapping
 
                     dictionary.Add((string)enumerator.Key, _toEncodableValue(enumerator.Value, references));
                 }
+
+                return dictionary;
             }
 
             return value;

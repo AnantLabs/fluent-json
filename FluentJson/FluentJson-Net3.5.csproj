@@ -39,8 +39,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Configuration\JsonConfiguration.cs" />
     <Compile Include="Configuration\JsonDecodingConfiguration.cs" />
-    <Compile Include="Configuration\JsonBaseConfiguration.cs" />
     <Compile Include="Configuration\JsonEncodingConfiguration.cs" />
     <Compile Include="Exceptions\JsonEncodingException.cs" />
     <Compile Include="Exceptions\JsonDecodingException.cs" />
