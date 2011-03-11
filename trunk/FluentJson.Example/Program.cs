@@ -65,7 +65,7 @@ namespace FluentJson.Example
 
         static void Main(string[] args)
         {
-            _example3();
+            _example4();
         }
 
         //***********************************************************************************
@@ -189,6 +189,27 @@ namespace FluentJson.Example
 
             string json = encoder.Encode(Program.bookB);
             Console.WriteLine("Example 3:");
+            Console.WriteLine(json);
+            Console.ReadLine();
+        }
+
+        private static void _example4()
+        {
+            _setup();
+
+            IJsonEncoder<IDictionary<string, Author>> encoder = Json.EncoderFor<IDictionary<string, Author>>(config => config
+                .MapType<Author>(map => map
+                    .AllFields()
+                )
+                .UseTidy(true)
+            );
+
+            Dictionary<string, Author> input = new Dictionary<string, Author>();
+            input.Add("author 1: ", new Author() { forname = "Jules", surname = "Verne" });
+            input.Add("author 2: ", new Author() { forname = "Bob", surname = "Doe" });
+
+            string json = encoder.Encode(input);
+            Console.WriteLine("Example 4:");
             Console.WriteLine(json);
             Console.ReadLine();
         }
