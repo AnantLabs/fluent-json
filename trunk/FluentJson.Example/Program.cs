@@ -35,6 +35,8 @@ namespace FluentJson.Example
 {
     class Program
     {
+        private static JsonConfiguration<Book> _configuration;
+
         private static Book bookA = new Book { 
             title = "Around the world in 80 days",
             type = BookType.Roman,
@@ -63,9 +65,10 @@ namespace FluentJson.Example
 
         static void Main(string[] args)
         {
-            _example2();
+            _example3();
         }
 
+        //***********************************************************************************
         private static void _example1()
         {
             // Encode Book A
@@ -107,6 +110,7 @@ namespace FluentJson.Example
             Console.ReadLine();
         }
 
+        //***********************************************************************************
         private static void _example2()
         {
             // Re-using configurations
@@ -145,9 +149,48 @@ namespace FluentJson.Example
             Console.ReadLine();
         }
 
+        //***********************************************************************************
+
+        // Next examples will depend upon existing config
+        private static void _setup()
+        {
+            _configuration = Json.ConfigurationFor<Book>()
+                .Map(map => map
+                    .AllFields()
+                    .Field<DateTime>(field => field.pubDate, pubDate => pubDate
+                        .EncodeAs<string>(value => value.ToShortDateString())
+                        .DecodeAs<string>(value => DateTime.Parse(value))
+                    )
+                    .Field<BookType>(field => field.type, type => type
+                        .EncodeAs<int>(value => (int)value)
+                        .DecodeAs<int>(value => (BookType)Enum.ToObject(typeof(BookType), value))
+                    )
+                )
+                .MapType<Author>(map => map
+                    .AllFields()
+                );
+        }
+
         private static void _example3()
         {
-            //hmmmm 
+            _setup();
+
+            IJsonEncoder<Book> encoder = Json.EncoderFor<Book>(config => config
+               .DeriveFrom(_configuration)
+
+               // This request will NOT override the existing mapping.
+               // This makes extending the base configuration easy.
+               .Map(map => map
+                   .FieldTo(field => field.numPages, "test")
+                )
+
+               .UseTidy(true)
+           );
+
+            string json = encoder.Encode(Program.bookB);
+            Console.WriteLine("Example 3:");
+            Console.WriteLine(json);
+            Console.ReadLine();
         }
     }
 

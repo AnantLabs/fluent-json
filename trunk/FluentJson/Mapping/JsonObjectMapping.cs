@@ -134,12 +134,28 @@ namespace FluentJson.Mapping
 
         private MemberInfo _getAccessedMemberInfo<TField>(Expression<Func<T, TField>> expression)
         {
-            if (expression.Body.NodeType == ExpressionType.MemberAccess)
+            Expression current = expression;
+            while (current != null)
             {
-                MemberExpression memberExpression = (MemberExpression)expression.Body;
-                if (memberExpression.Member is FieldInfo || memberExpression.Member is PropertyInfo)
+                if (current.NodeType == ExpressionType.MemberAccess)
                 {
-                    return memberExpression.Member;
+                    MemberExpression memberExpression = (MemberExpression)current;
+                    if (memberExpression.Member is FieldInfo || memberExpression.Member is PropertyInfo)
+                    {
+                        return memberExpression.Member;
+                    }
+                }
+                else if (current.NodeType == ExpressionType.Convert)
+                {
+                    current = (current as UnaryExpression).Operand;
+                }
+                else if (current.NodeType == ExpressionType.Lambda)
+                {
+                    current = (current as LambdaExpression).Body;
+                }
+                else
+                {
+                    break;
                 }
             }
 
