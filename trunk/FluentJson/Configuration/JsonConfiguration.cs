@@ -24,11 +24,11 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#if !NET20
-
 using System;
+using System.Collections;
 using System.Collections.Generic;
 
+using FluentJson.Helpers;
 using FluentJson.Mapping;
 
 namespace FluentJson.Configuration
@@ -44,6 +44,47 @@ namespace FluentJson.Configuration
         internal JsonConfiguration()
         {
             this.Mappings = new Dictionary<Type, JsonObjectMappingBase>();
+        }
+
+        /// <summary>
+        /// Automatically generates a configuration for the current type.
+        /// </summary>
+        /// <returns>The configuration.</returns>
+        public JsonConfiguration<T> AutoGenerate()
+        {
+            // Reset
+            this.Mappings = new Dictionary<Type, JsonObjectMappingBase>();
+
+            Stack<Type> mapped = new Stack<Type>();
+            Stack<Type> unmapped = new Stack<Type>();
+
+            Type root = _resolveMapType(typeof(T));
+            if (root != null)
+            {
+                unmapped.Push(root);
+            }
+
+            while (unmapped.Count > 0)
+            {
+                Type type = unmapped.Pop();
+                mapped.Push(type);
+
+                JsonObjectMappingBase mapping = (JsonObjectMappingBase)Activator.CreateInstance(typeof(JsonObjectMapping<>).MakeGenericType(type));
+                _addMapping(mapping);
+
+                mapping.AutoGenerate();
+
+                foreach (JsonFieldMappingBase field in mapping.FieldMappings.Values)
+                {
+                    Type nested = _resolveMapType(field.DesiredType);
+                    if (nested != null  && !mapped.Contains(nested) && !unmapped.Contains(nested))
+                    {
+                        unmapped.Push(nested);
+                    }
+                }
+            }
+
+            return this;
         }
 
         /// <summary>
@@ -63,6 +104,19 @@ namespace FluentJson.Configuration
 
             return this;
         }
+
+        /// <summary>
+        /// Returns a mapping expression for the root type.
+        /// </summary>
+        /// <param name="expression">The object mapping expression.</param>
+        /// <returns>The configuration.</returns>
+        public JsonConfiguration<T> WithMapping(JsonObjectMappingBase mapping)
+        {
+            _addMapping(mapping);
+            return this;
+        }
+
+        #if !NET20
 
         /// <summary>
         /// Returns a mapping expression for the root type.
@@ -98,16 +152,7 @@ namespace FluentJson.Configuration
             return this;
         }
 
-        /// <summary>
-        /// Returns a mapping expression for the root type.
-        /// </summary>
-        /// <param name="expression">The object mapping expression.</param>
-        /// <returns>The configuration.</returns>
-        public JsonConfiguration<T> WithMapping(JsonObjectMappingBase mapping)
-        {
-            _addMapping(mapping);
-            return this;
-        }
+        #endif
 
         private void _addMapping(JsonObjectMappingBase mapping)
         {
@@ -128,7 +173,41 @@ namespace FluentJson.Configuration
                 throw new Exception("Interfaces cannot be mapped.");
             }
         }
+
+        private Type _resolveMapType(Type type)
+        {
+            Type result = type;
+
+            if (type.IsGenericType)
+            {
+                if (TypeHelper.IsThreatableAs(type, typeof(IList<>)))
+                {
+                    result = type.GetGenericArguments()[0];
+                }
+                else if (TypeHelper.IsThreatableAs(type, typeof(IDictionary<,>)))
+                {
+                    result = type.GetGenericArguments()[1];
+                }
+            }
+
+            if (_shouldMapType(result))
+            {
+                return result;
+            }
+
+            return null;
+        }
+
+        private bool _shouldMapType(Type type)
+        {
+            // Exluce types from the System assembly
+            if (type.Assembly != typeof(string).Assembly)
+            {
+                // Only allow nested types from the same assembly as type T
+                return type.Assembly == typeof(T).Assembly;
+            }
+
+            return false;
+        }
     }
 }
-
-#endif

@@ -24,20 +24,23 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#if !NET20
-
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Reflection;
-
-using FluentJson.Configuration;
 
 namespace FluentJson.Mapping
 {
+    /// <summary>
+    /// Used internally for storing references while encoding or decoding.
+    /// </summary>
     internal class ReferenceStore
     {
+        /// <summary>
+        /// object to reference
+        /// </summary>
         private Dictionary<object, double> _references;
+
+        /// <summary>
+        /// reference to object
+        /// </summary>
         private Dictionary<double, object> _objects;
 
         internal ReferenceStore()
@@ -46,6 +49,10 @@ namespace FluentJson.Mapping
             _objects = new Dictionary<double, object>();
         }
 
+        /// <summary>
+        /// Creates a numerical reference to the given object.
+        /// </summary>
+        /// <param name="value"></param>
         internal void StoreObject(object value)
         {
             if (!_references.ContainsKey(value))
@@ -55,26 +62,44 @@ namespace FluentJson.Mapping
             }
         }
 
+        /// <summary>
+        /// Sees if a numerical reference is stored for the given object.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         internal bool HasReferenceTo(object value)
         {
             return _references.ContainsKey(value);
         }
 
+        /// <summary>
+        /// Gets the numerical reference to the given object.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         internal double GetReferenceTo(object value)
         {
             return _references[value];
         }
 
+        /// <summary>
+        /// Sees if this numerical value actually points to an object.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         internal bool IsReference(double value)
         {
             return _objects.ContainsKey(value);
         }
 
+        /// <summary>
+        /// Resolves the object from the given numerical reference.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         internal object GetFromReference(double value)
         {
             return _objects[value];
         }
     }
 }
-
-#endif

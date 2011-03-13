@@ -29,7 +29,12 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 
+#if NET40
+using System.Dynamic;
+#endif
+
 using FluentJson.Exceptions;
+using FluentJson.Helpers;
 
 namespace FluentJson
 {
@@ -74,7 +79,6 @@ namespace FluentJson
         {
             string json = "";
 
-            // Initiate recursion
             _encodeNextToken(value, ref json, new JsonWhiteSpaceState());
             
             return json;
@@ -104,7 +108,7 @@ namespace FluentJson
 
         private bool _encodeString(object value, ref string json, JsonWhiteSpaceState whiteSpace)
         {
-            if (!(value is String)) return false;
+            if (!(value is string)) return false;
 
             // Begin string
             json += JsonTokenType.String;
@@ -165,10 +169,18 @@ namespace FluentJson
 
         private bool _encodeNumber(object value, ref string json, JsonWhiteSpaceState whiteSpace)
         {
-            double parsed;
-            if (!double.TryParse(value.ToString(), out parsed)) return false;
+            Type type = value.GetType();
+            if (!TypeHelper.IsNumerical(type)) return false;
 
-            json += Convert.ToString(parsed, CultureInfo.InvariantCulture);
+            string parsed = null;
+
+            // Maximize precision when converting to string
+            if (type == typeof(float)) parsed = ((float)value).ToString("R", CultureInfo.InvariantCulture);
+            // Maximize precision when converting to string
+            else if (type == typeof(double)) parsed = ((double)value).ToString("R", CultureInfo.InvariantCulture);
+            else parsed = Convert.ToString(value, CultureInfo.InvariantCulture);
+
+            json += parsed;
 
             return true;
         }
@@ -239,8 +251,23 @@ namespace FluentJson
 
         private bool _encodeObject(object value, ref string json, JsonWhiteSpaceState whiteSpace)
         {
+            #if NET40
+            int count = 0;
+            if ((value is IDictionary))
+            {
+                count = (value as IDictionary).Count;
+            }
+            else if (value is IDictionary<string, object>)
+            {
+                count = (value as IDictionary<string, object>).Count;
+            }
+            else return false;
+            #else
             if (!(value is IDictionary)) return false;
-            IDictionary dict = (IDictionary)value;
+            int count = (value as IDictionary).Count;
+            #endif
+
+            IEnumerable dict = (IEnumerable)value;
 
             // Begin object
             json += JsonTokenType.ObjectStart;
@@ -254,9 +281,23 @@ namespace FluentJson
 
             int i = 0;
 
-            IDictionaryEnumerator enumerator = dict.GetEnumerator();
+            IEnumerator enumerator = dict.GetEnumerator();
             while (enumerator.MoveNext())
             {
+                object currentKey = null;
+                object currentValue = null;
+                if (enumerator.Current is IDictionaryEnumerator)
+                {
+                    currentKey = (enumerator.Current as IDictionaryEnumerator).Key;
+                    currentValue = (enumerator.Current as IDictionaryEnumerator).Value;
+                }
+                else if (enumerator.Current is KeyValuePair<string, object>)
+                {
+                    KeyValuePair<string, object> pair = (KeyValuePair<string, object>)enumerator.Current;
+                    currentKey = pair.Key;
+                    currentValue = pair.Value;
+                }
+
                 // Tidy printing
                 if (this.IsTidy)
                 {
@@ -264,7 +305,7 @@ namespace FluentJson
                 }
 
                 // Encode child node field
-                if (_encodeNextToken(enumerator.Key, ref json, whiteSpace) != _encodeString)
+                if (_encodeNextToken(currentKey, ref json, whiteSpace) != _encodeString)
                 {
                     // The string encoder should have been used.
                     // Since it wasn't, this is not a string.
@@ -284,14 +325,14 @@ namespace FluentJson
                 if (this.IsTidy)
                 {
                     json += CHAR_SPACE;
-                    whiteSpace.BeginInset(0, (enumerator.Key as string).Length + 6);
+                    whiteSpace.BeginInset(0, (currentKey as string).Length + 6);
                 }
 
                 // Encode child node value
-                _encodeNextToken(enumerator.Value, ref json, whiteSpace);
+                _encodeNextToken(currentValue, ref json, whiteSpace);
 
                 // Append seperator for next child node
-                if (i + 1 < dict.Count)
+                if (i + 1 < count)
                 {
                     json += JsonTokenType.ElementSeperator;
                 }

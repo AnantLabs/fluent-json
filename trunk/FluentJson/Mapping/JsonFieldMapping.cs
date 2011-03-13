@@ -24,10 +24,12 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#if !NET20
 
 using System;
+
+#if !NET20
 using System.Linq.Expressions;
+#endif
 
 using System.Reflection;
 
@@ -72,6 +74,13 @@ namespace FluentJson.Mapping
             }
         }
 
+        internal JsonFieldMapping(MemberInfo memberInfo, string jsonObjectField) : this (memberInfo)
+        {
+            this.JsonObjectField = jsonObjectField;
+        }
+
+        #region ICloneable Members
+
         public override object Clone()
         {
             JsonFieldMapping<T> clone = new JsonFieldMapping<T>(_memberInfo);
@@ -85,17 +94,26 @@ namespace FluentJson.Mapping
             return clone;
         }
 
-        internal JsonFieldMapping(MemberInfo memberInfo, string jsonObjectField) : this (memberInfo)
-        {
-            this.JsonObjectField = jsonObjectField;
-        }
+        #endregion
 
+        /// <summary>
+        /// Map this field to a custom json field.
+        /// </summary>
+        /// <param name="jsonObjectField"></param>
+        /// <returns></returns>
         public JsonFieldMapping<T> To(string jsonObjectField)
         {
             this.JsonObjectField = jsonObjectField;
             return this;
         }
 
+        #if !NET20
+        /// <summary>
+        /// Decode this field as a different type by suplying a conversion expression.
+        /// </summary>
+        /// <typeparam name="TDecode"></typeparam>
+        /// <param name="expression"></param>
+        /// <returns></returns>
         public JsonFieldMapping<T> DecodeAs<TDecode>(Expression<Func<TDecode, T>> expression)
         {
             this.DesiredType = typeof(TDecode);
@@ -104,6 +122,12 @@ namespace FluentJson.Mapping
             return this;
         }
 
+        /// <summary>
+        /// Encode this field as a different type by suplying a conversion expression.
+        /// </summary>
+        /// <typeparam name="TEncode"></typeparam>
+        /// <param name="expression"></param>
+        /// <returns></returns>
         public JsonFieldMapping<T> EncodeAs<TEncode>(Expression<Func<T, TEncode>> expression)
         {
             this.DesiredType = typeof(TEncode);
@@ -111,6 +135,7 @@ namespace FluentJson.Mapping
 
             return this;
         }
+        #endif
 
         override internal object Encode(object value)
         {
@@ -147,5 +172,3 @@ namespace FluentJson.Mapping
         } 
     }
 }
-
-#endif

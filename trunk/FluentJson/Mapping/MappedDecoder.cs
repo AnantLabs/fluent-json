@@ -24,8 +24,6 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#if !NET20
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -33,6 +31,7 @@ using System.Globalization;
 using System.Reflection;
 
 using FluentJson.Configuration;
+using FluentJson.Helpers;
 
 namespace FluentJson.Mapping
 {
@@ -64,8 +63,10 @@ namespace FluentJson.Mapping
         /// <returns></returns>
         private object _toDesiredValue(object value, Type desiredValueType, ReferenceStore references)
         {
+            // Nothing we can do for null values
             if (value == null)
             {
+                // But we can see if the desired type is nullable
                 if (!desiredValueType.IsValueType)
                 {
                     return value;
@@ -76,12 +77,18 @@ namespace FluentJson.Mapping
                 }
             }
 
+            // Get the actual type
+            Type type = value.GetType();
+
             if (_configuration.Mappings.ContainsKey(desiredValueType))
             {
+                // Desired type is a mapped type
                 if (_configuration.Mappings[desiredValueType].UsesReferencing && value is double)
                 {
+                    // See if current value is a reference
                     if (references.IsReference((double)value))
                     {
+                        // Current value is a reference
                         return references.GetFromReference((double)value);
                     }
                     else
@@ -90,15 +97,17 @@ namespace FluentJson.Mapping
                     }
                 }
 
-                // Desired type has been mapped, use this mapping.
+                // Desired type has been mapped, use this mapping to construct the desired type.
                 object result = Activator.CreateInstance(desiredValueType);
 
+                // See if the current value should be referenced
                 if (_configuration.Mappings[desiredValueType].UsesReferencing)
                 {
+                    // Add a reference to this newly constructed value
                     references.StoreObject(result);
                 }
 
-
+                // JsonDecoder is expected to return a Dictionary<string, object> for a json object
                 if (value is IDictionary<string, object>)
                 {
                     _transferDictionary((IDictionary<string, object>)value, result, references);
@@ -109,91 +118,92 @@ namespace FluentJson.Mapping
                     throw new Exception("Decoded value (" + value + ") could not be mapped against '" + desiredValueType.Name + "'.");
                 }
             }
-            else if (desiredValueType.IsAssignableFrom(value.GetType()))
+            else if(TypeHelper.IsThreatableAs(type, desiredValueType))
             {
                 // Safe to assign, simply pass on.
                 return value;
             }
-            else if (desiredValueType.IsGenericType)
+            else if ((TypeHelper.IsList(desiredValueType) || desiredValueType.IsArray) && value is IList)
             {
-                // Try to convert current value to a matching generic type
-                Type[] genericArguments = desiredValueType.GetGenericArguments();
-                if (genericArguments.Length == 1)
-                {
-                    // 1 generic argument could indicate a generic list
-                    if (typeof(IList<>).MakeGenericType(genericArguments[0]).IsAssignableFrom(desiredValueType))
-                    {
-                        // A list is desired
-                        IList list = null;
-                        if (!desiredValueType.IsInterface)
-                        {
-                            list = (IList)Activator.CreateInstance(desiredValueType);
-                        }
-                        else
-                        {
-                            list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(genericArguments[0]));
-                        }
-                        
-                        if (value is IList)
-                        {
-                            foreach (object element in (value as IList))
-                            {
-                                list.Add(_toDesiredValue(element, genericArguments[0], references));
-                            }
+                Type desiredElementType = null;
+                IList list = null;
 
-                            return list;
-                        }
+                if (desiredValueType.IsArray && desiredValueType.GetArrayRank() == 1)
+                {
+                    desiredElementType = desiredValueType.GetElementType();
+                    list = (IList)Activator.CreateInstance(desiredElementType.MakeArrayType(), new object[] { (value as IList).Count });
+
+                    for (int i = 0; i < (value as IList).Count; i++)
+                    {
+                        list[i] = _toDesiredValue((value as IList)[i], desiredElementType, references);
                     }
                 }
-                else if (genericArguments.Length == 2 && genericArguments[0].IsAssignableFrom(typeof(string)))
+                else if (TypeHelper.IsGeneric(desiredValueType))
                 {
-                    // 2 generic arguments could indicate a generic dictionary
-                    if (typeof(IDictionary<,>).MakeGenericType(genericArguments[0], genericArguments[1]).IsAssignableFrom(desiredValueType))
+                    desiredElementType = desiredValueType.GetGenericArguments()[0];
+
+                    if (desiredValueType.IsInterface)
                     {
-                        // A dictionary is desired
-                        IDictionary dict = null;
-                        if (!desiredValueType.IsInterface)
-                        {
-                            dict = (IDictionary)Activator.CreateInstance(desiredValueType);
-                        }
-                        else
-                        {
-                            dict = (IDictionary)Activator.CreateInstance(typeof(IDictionary<,>).MakeGenericType(genericArguments[0], genericArguments[1]));
-                        }
-
-                        if (value is IDictionary)
-                        {
-                            IDictionaryEnumerator enumerator = (value as IDictionary).GetEnumerator();
-                            while (enumerator.MoveNext())
-                            {
-                                dict.Add(enumerator.Key, _toDesiredValue(enumerator.Value, genericArguments[1], references));
-                            }
-
-                            return dict;
-                        }
+                        list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(desiredValueType.GetGenericArguments()));
                     }
+                    else
+                    {
+                        list = (IList)Activator.CreateInstance(desiredValueType);
+                    }
+
+                    foreach (object element in (value as IList))
+                    {
+                        list.Add(_toDesiredValue(element, desiredElementType, references));
+                    }
+                }
+
+                if (list != null)
+                {
+                    return list;
                 }
             }
-            else if (desiredValueType.IsPrimitive && !desiredValueType.IsAssignableFrom(typeof(bool)) && value is double)
+            else if (TypeHelper.IsDictionary(desiredValueType) &&  value is IDictionary<string, object>)
             {
-                string str = Convert.ToString(value, CultureInfo.InvariantCulture);
+                if (!TypeHelper.IsGeneric(desiredValueType) || TypeHelper.IsThreatableAs(desiredValueType.GetGenericArguments()[0], typeof(string)))
+                {
+                    Type desiredElementType = typeof(object);
+                    if (desiredValueType.IsGenericType)
+                    {
+                        desiredElementType = desiredValueType.GetGenericArguments()[1];
+                    }
 
-                try
-                {
-                    if (desiredValueType == typeof(byte)) return byte.Parse(str);
-                    if (desiredValueType == typeof(sbyte)) return sbyte.Parse(str);
-                    if (desiredValueType == typeof(short)) return short.Parse(str);
-                    if (desiredValueType == typeof(ushort)) return ushort.Parse(str);
-                    if (desiredValueType == typeof(int)) return int.Parse(str);
-                    if (desiredValueType == typeof(uint)) return uint.Parse(str);
-                    if (desiredValueType == typeof(float)) return float.Parse(str);
-                    if (desiredValueType == typeof(double)) return double.Parse(str);
-                    if (desiredValueType == typeof(long)) return long.Parse(str);
+                    Type[] genericArguments = new Type[] { typeof(string), desiredElementType };
+
+                    IDictionary dict = null;
+                    if (desiredValueType.IsInterface)
+                    {
+                        dict = (IDictionary)Activator.CreateInstance(typeof(Dictionary<,>).MakeGenericType(genericArguments));
+                    }
+                    else
+                    {
+                        dict = (IDictionary)Activator.CreateInstance(desiredValueType);
+                    }
+
+                    foreach (KeyValuePair<string, object> pair in (value as IDictionary<string, object>))
+                    {
+                        dict.Add(pair.Key, _toDesiredValue(pair.Value, desiredElementType, references));
+                    }
+
+                    return dict;
                 }
-                catch (Exception exception)
-                {
-                    throw new Exception("Decoded number (" + value + ") could not be converted to number type '" + desiredValueType.Name + "'.", exception);
-                }
+            }
+            else if (TypeHelper.IsNumerical(desiredValueType) && TypeHelper.IsNumerical(type))
+            {
+                if (desiredValueType == typeof(byte)) return Convert.ToByte(value, CultureInfo.InvariantCulture);
+                if (desiredValueType == typeof(sbyte)) return Convert.ToSByte(value, CultureInfo.InvariantCulture);
+                if (desiredValueType == typeof(short)) return Convert.ToInt16(value, CultureInfo.InvariantCulture);
+                if (desiredValueType == typeof(ushort)) return Convert.ToUInt16(value, CultureInfo.InvariantCulture);
+                if (desiredValueType == typeof(int)) return Convert.ToInt32(value, CultureInfo.InvariantCulture);
+                if (desiredValueType == typeof(uint)) return Convert.ToUInt32(value, CultureInfo.InvariantCulture);
+                if (desiredValueType == typeof(long)) return Convert.ToInt64(value, CultureInfo.InvariantCulture);
+                if (desiredValueType == typeof(ulong)) return Convert.ToUInt64(value, CultureInfo.InvariantCulture);
+                if (desiredValueType == typeof(float)) return Convert.ToSingle(value, CultureInfo.InvariantCulture);
+                if (desiredValueType == typeof(double)) return (double)value;
             }
 
             throw new Exception("Decoded value (" + value + ") could not be converted to type '" + desiredValueType.Name + "'.");
@@ -253,5 +263,3 @@ namespace FluentJson.Mapping
         }
     }
 }
-
-#endif

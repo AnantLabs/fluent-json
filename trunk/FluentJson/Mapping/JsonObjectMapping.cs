@@ -24,11 +24,13 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#if !NET20
 
 using System;
 using System.Collections.Generic;
+
+#if !NET20
 using System.Linq.Expressions;
+#endif
 
 using System.Reflection;
 
@@ -44,6 +46,7 @@ namespace FluentJson.Mapping
         }
 
         abstract public object Clone();
+        abstract internal void AutoGenerate();
     }
 
     public class JsonObjectMapping<T> : JsonObjectMappingBase
@@ -55,6 +58,7 @@ namespace FluentJson.Mapping
             _exludes = new List<MemberInfo>();
         }
 
+        #region ICloneable Members
         public override object Clone()
         {
             JsonObjectMapping<T> clone = new JsonObjectMapping<T>();
@@ -73,13 +77,23 @@ namespace FluentJson.Mapping
 
             return clone;
         }
+        #endregion
 
+        /// <summary>
+        /// Enables or disables support for referencing multiple occurences to an instance of this type.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         public JsonObjectMapping<T> UseReferencing(bool value)
         {
             this.UsesReferencing = value;
             return this;
         }
 
+        /// <summary>
+        /// Maps all fields automatically, except any excluded fields.
+        /// </summary>
+        /// <returns></returns>
         public JsonObjectMapping<T> AllFields()
         {
             List<MemberInfo> members = new List<MemberInfo>();
@@ -94,6 +108,27 @@ namespace FluentJson.Mapping
             return this;
         }
 
+        #if !NET20
+
+        /// <summary>
+        /// Maps the given field.
+        /// </summary>
+        /// <param name="fieldExpression"></param>
+        /// <returns></returns>
+        public JsonObjectMapping<T> Field(Expression<Func<T, object>> fieldExpression)
+        {
+            MemberInfo memberInfo = _getAccessedMemberInfo(fieldExpression);
+            _mapMember(memberInfo, new JsonFieldMapping<object>(memberInfo, memberInfo.Name));
+
+            return this;
+        }
+
+        /// <summary>
+        /// Maps the given field and allows for specifying a json field name.
+        /// </summary>
+        /// <param name="fieldExpression"></param>
+        /// <param name="jsonObjectField"></param>
+        /// <returns></returns>
         public JsonObjectMapping<T> FieldTo(Expression<Func<T, object>> fieldExpression, string jsonObjectField)
         {
             MemberInfo memberInfo = _getAccessedMemberInfo(fieldExpression);
@@ -102,6 +137,13 @@ namespace FluentJson.Mapping
             return this;
         }
 
+        /// <summary>
+        /// Maps the given field and allows for custom field mapping expressions.
+        /// </summary>
+        /// <typeparam name="TField"></typeparam>
+        /// <param name="fieldExpression"></param>
+        /// <param name="mappingExpression"></param>
+        /// <returns></returns>
         public JsonObjectMapping<T> Field<TField>(Expression<Func<T, TField>> fieldExpression, Action<JsonFieldMapping<TField>> mappingExpression)
         {
             MemberInfo memberInfo = _getAccessedMemberInfo<TField>(fieldExpression);
@@ -114,6 +156,11 @@ namespace FluentJson.Mapping
             return this;
         }
 
+        /// <summary>
+        /// Will prevent the given field from being mapped.
+        /// </summary>
+        /// <param name="fieldExpression"></param>
+        /// <returns></returns>
         public JsonObjectMapping<T> ExceptField(Expression<Func<T, object>> fieldExpression)
         {
             MemberInfo memberInfo = _getAccessedMemberInfo(fieldExpression);
@@ -131,7 +178,7 @@ namespace FluentJson.Mapping
             _exludes.Add(memberInfo);
             return this;
         }
-
+        
         private MemberInfo _getAccessedMemberInfo<TField>(Expression<Func<T, TField>> expression)
         {
             Expression current = expression;
@@ -160,6 +207,12 @@ namespace FluentJson.Mapping
             }
 
             throw new Exception("This expression does not define a property or field access.");
+        }
+        #endif
+
+        internal override void AutoGenerate()
+        {
+            this.AllFields();
         }
 
         private void _mapMember(MemberInfo memberInfo, JsonFieldMappingBase fieldMapping)
@@ -195,5 +248,3 @@ namespace FluentJson.Mapping
         }
     }
 }
-
-#endif
