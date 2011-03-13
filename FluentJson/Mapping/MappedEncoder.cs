@@ -24,14 +24,13 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#if !NET20
-
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 
 using FluentJson.Configuration;
+using FluentJson.Helpers;
 
 namespace FluentJson.Mapping
 {
@@ -56,57 +55,52 @@ namespace FluentJson.Mapping
         {
             Dictionary<string, object> result = new Dictionary<string,object>();
 
-            if (_configuration.Mappings.ContainsKey(value.GetType()))
+            // Get the mapping
+            JsonObjectMappingBase mapping = _configuration.Mappings[value.GetType()];
+
+            // Itterate over each field mapping
+            Dictionary<MemberInfo, JsonFieldMappingBase>.Enumerator mappings = mapping.FieldMappings.GetEnumerator();
+            while (mappings.MoveNext())
             {
-                JsonObjectMappingBase mapping = _configuration.Mappings[value.GetType()];
+                JsonFieldMappingBase fieldMapping = mappings.Current.Value;
+                MemberInfo memberInfo = mappings.Current.Key;
 
-                Dictionary<MemberInfo, JsonFieldMappingBase>.Enumerator mappings = mapping.FieldMappings.GetEnumerator();
-                while (mappings.MoveNext())
+                // Get value for encoding
+                object fieldValue = null;
+                if (memberInfo is PropertyInfo)
                 {
-                    JsonFieldMappingBase fieldMapping = mappings.Current.Value;
-                    MemberInfo memberInfo = mappings.Current.Key;
-
-                    // Get value for encoding
-                    object fieldValue = null;
-                    if (memberInfo is PropertyInfo)
+                    // Access property
+                    PropertyInfo propertyInfo = (PropertyInfo)memberInfo;
+                    if (propertyInfo.CanRead)
                     {
-                        // Access property
-                        PropertyInfo propertyInfo = (PropertyInfo)memberInfo;
-                        if (propertyInfo.CanRead)
-                        {
-                            fieldValue = propertyInfo.GetValue(value, null);
-                        }
-                        else
-                        {
-                            throw new Exception("Property '" + propertyInfo.Name + "' could not be read.");
-                        }
-                    }
-                    else if (memberInfo is FieldInfo)
-                    {
-                        // Access field
-                        FieldInfo fieldInfo = (FieldInfo)memberInfo;
-                        fieldValue = fieldInfo.GetValue(value);
-                    }
-
-                    // Pass trough (possible) fieldmapping encoder
-                    fieldValue = fieldMapping.Encode(fieldValue);
-
-                    // Convert to encodable value
-                    fieldValue = _toEncodableValue(fieldValue, references);
-
-                    if (!result.ContainsKey(fieldMapping.JsonObjectField))
-                    {
-                        result.Add(fieldMapping.JsonObjectField, fieldValue);
+                        fieldValue = propertyInfo.GetValue(value, null);
                     }
                     else
                     {
-                        throw new Exception("A field mapping already exists for field name '" + fieldMapping.JsonObjectField + "'.");
+                        throw new Exception("Property '" + propertyInfo.Name + "' could not be read.");
                     }
                 }
-            }
-            else
-            {
-                throw new Exception("No mapping could be resolved for type '" + value.GetType() + "'.");
+                else if (memberInfo is FieldInfo)
+                {
+                    // Access field
+                    FieldInfo fieldInfo = (FieldInfo)memberInfo;
+                    fieldValue = fieldInfo.GetValue(value);
+                }
+
+                // Pass trough (possible) fieldmapping encoder
+                fieldValue = fieldMapping.Encode(fieldValue);
+
+                // Convert to encodable value
+                fieldValue = _toEncodableValue(fieldValue, references);
+
+                if (!result.ContainsKey(fieldMapping.JsonObjectField))
+                {
+                    result.Add(fieldMapping.JsonObjectField, fieldValue);
+                }
+                else
+                {
+                    throw new Exception("A field mapping already exists for field name '" + fieldMapping.JsonObjectField + "'.");
+                }
             }
 
             return result;
@@ -114,27 +108,38 @@ namespace FluentJson.Mapping
 
         private object _toEncodableValue(object value, ReferenceStore references)
         {
+            // Nothing we can do
             if (value == null) return value;
 
+            // Get the actual type
             Type type = value.GetType();
+
             if (_configuration.Mappings.ContainsKey(type))
             {
+                // This is a mapped type
                 if (_configuration.Mappings[type].UsesReferencing)
                 {
+                    // This type uses referencing
                     if (references.HasReferenceTo(value))
                     {
+                        // This value should be encoded as a reference
                         return references.GetReferenceTo(value);
                     }
                     else
                     {
+                        // This type has no reference yet, create one.
                         references.StoreObject(value);
                     }
                 }
 
+                // Convert this mapped type to a dictionary
                 return _toDictionary(value, references);
             }
-            else if (value is IList)
+            else if(TypeHelper.IsList(type))
             {
+                // This type will be threated as a list.
+
+                // Each element will be processed, a new list is required.
                 List<object> list = new List<object>();
                 foreach (object element in (value as IList))
                 {
@@ -143,14 +148,19 @@ namespace FluentJson.Mapping
 
                 return list;
             }
-            else if (value is IDictionary)
+            else if(TypeHelper.IsDictionary(type))
             {
+                // This type will be threated as a dictionary
                 Dictionary<string, object> dictionary = new Dictionary<string, object>();
+
+                // Each element will be processed, a new list is required.
                 IDictionaryEnumerator enumerator = (value as IDictionary).GetEnumerator();
                 while (enumerator.MoveNext())
                 {
+                    // For successful encoding, the key is required to be a string
                     if(!(enumerator.Key is string))
                     {
+                        // Key is not a string
                         throw new Exception("Dictionary key '" + enumerator.Key + "; is not of type String.");
                     }
 
@@ -164,5 +174,3 @@ namespace FluentJson.Mapping
         }
     }
 }
-
-#endif

@@ -24,7 +24,6 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#if !NET20
 
 using System;
 
@@ -34,6 +33,8 @@ namespace FluentJson.Configuration
 {
     public class JsonDecodingConfiguration<T> : JsonConfiguration<T>
     {
+        #if !NET20
+
         /// <summary>
         /// Returns a mapping expression for the root type.
         /// </summary>
@@ -55,11 +56,25 @@ namespace FluentJson.Configuration
             return (JsonDecodingConfiguration<T>)base.MapType<TType>(expression);
         }
 
-        public JsonDecodingConfiguration<T> DeriveFrom(JsonConfiguration<T> configuration)
+        #endif
+
+        /// <summary>
+        /// Derives this configuration from an existing configuration.
+        /// </summary>
+        /// <param name="configuration">The configuration to derive from.</param>
+        /// <returns>The configuration.</returns>
+        new public JsonDecodingConfiguration<T> DeriveFrom(JsonConfiguration<T> configuration)
         {
             return (JsonDecodingConfiguration<T>)base.DeriveFrom(configuration);
         }
+
+        /// <summary>
+        /// Automatically generates a configuration for the current type.
+        /// </summary>
+        /// <returns>The configuration.</returns>
+        new public JsonDecodingConfiguration<T> AutoGenerate()
+        {
+            return (JsonDecodingConfiguration<T>)base.AutoGenerate();
+        }
     }
 }
-
-#endif

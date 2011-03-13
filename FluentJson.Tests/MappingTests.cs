@@ -26,6 +26,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections;
+using System.Linq;
+
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using FluentJson;
@@ -36,6 +39,50 @@ namespace FluentJson.Tests
     [TestClass]
     public class MappingTests
     {
+        [TestMethod]
+        public void TestNumericalConversion()
+        {
+            Json.DecodeType<byte>(Json.EncodeType<byte>(77));
+            Json.DecodeType<sbyte>(Json.EncodeType<sbyte>(77));
+            Json.DecodeType<short>(Json.EncodeType<short>(77));
+            Json.DecodeType<ushort>(Json.EncodeType<ushort>(77));
+            Json.DecodeType<int>(Json.EncodeType<int>(77));
+            Json.DecodeType<uint>(Json.EncodeType<uint>(77));
+            Json.DecodeType<long>(Json.EncodeType<long>(77));
+            Json.DecodeType<ulong>(Json.EncodeType<ulong>(77));
+            Json.DecodeType<float>(Json.EncodeType<float>(77));
+            Json.DecodeType<double>(Json.EncodeType<double>(77));
+        }
+
+        [TestMethod]
+        public void TestCollectionConversion()
+        {
+            Json.DecodeType<IList<string>>(Json.EncodeType<IList<string>>(new string[] { "a", "string" }));
+            Json.DecodeType<IList<object>>(Json.EncodeType<IList<string>>(new string[] { "a", "string" }));
+            Json.DecodeType<IList>(Json.EncodeType<IList<string>>(new string[] { "a", "string" }));
+            Json.DecodeType<ArrayList>(Json.EncodeType<IList<string>>(new string[] { "a", "string" }));
+            Json.DecodeType<string[]>(Json.EncodeType<IList<string>>(new string[] { "a", "string" }));
+        }
+
+        [TestMethod]
+        public void TestDictionaryConversion()
+        {
+            Dictionary<string, object> dict = new Dictionary<string, object>();
+            dict.Add("a", 532);
+            dict.Add("b", "hi");
+            dict.Add("c", false);
+
+            Json.DecodeType<IDictionary>(Json.EncodeType<IDictionary>(dict));
+            Json.DecodeType<IDictionary<string, object>>(Json.EncodeType<IDictionary>(dict));
+
+            dynamic result = Json.DecodeType<dynamic>(Json.EncodeType<IDictionary>(dict));
+            Assert.IsTrue(result.a == 532 && result.b == "hi" && result.c == false);
+
+            result.d = "lol";
+            dynamic result2 = Json.DecodeType<dynamic>(Json.EncodeType<dynamic>(result));
+            Assert.IsTrue(result2.d == "lol");
+        }
+
         [TestMethod]
         public void TestSingleClass()
         {
@@ -62,6 +109,7 @@ namespace FluentJson.Tests
                 )
             ).Decode(json);
 
+            
             Assert.AreEqual(input, output);
         }
 

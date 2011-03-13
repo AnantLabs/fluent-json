@@ -211,8 +211,9 @@ namespace FluentJson
                 length++;
             }
 
-            double number = 0;
-            if (double.TryParse(json.Substring(0, length), NumberStyles.Number, CultureInfo.InvariantCulture, out number))
+            double number;
+
+            if (double.TryParse(json.Substring(0, length), NumberStyles.Any, CultureInfo.InvariantCulture, out number))
             {
                 decoded = number;
                 json = json.Substring(length);

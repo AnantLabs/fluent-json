@@ -26,10 +26,8 @@
 
 using System;
 
-#if !NET20
 using FluentJson.Configuration;
 using FluentJson.Mapping;
-#endif
 
 namespace FluentJson
 {
@@ -52,6 +50,16 @@ namespace FluentJson
             return _defaultEncoder.Encode(value);
         }
 
+        /// <summary>
+        /// Encodes a value to a json string.
+        /// </summary>
+        /// <param name="value">Value to encode.</param>
+        /// <returns>A json string.</returns>
+        static public string EncodeType<T>(T value)
+        {
+            return EncoderFor<T>().Encode(value);
+        }
+
         #if !NET20
 
         /// <summary>
@@ -68,19 +76,20 @@ namespace FluentJson
             return new MappedEncoder<T>(configuration);
         }
 
+        #endif
+
         /// <summary>
-        /// Returns a json encoder for the specified configuration.
+        /// Returns a json encoder for the specified type.
         /// </summary>
         /// <typeparam name="T">Type to encode.</typeparam>
         /// <returns>An encoder for type T.</returns>
         static public IJsonEncoder<T> EncoderFor<T>()
         {
             JsonEncodingConfiguration<T> configuration = new JsonEncodingConfiguration<T>();
+            configuration.AutoGenerate();
 
             return new MappedEncoder<T>(configuration);
         }
-
-        #endif
 
         /// <summary>
         /// Decodes a json string.
@@ -91,6 +100,16 @@ namespace FluentJson
         {
             if(_defaultDecoder == null) _defaultDecoder = new JsonDecoder();
             return _defaultDecoder.Decode(json);
+        }
+
+        /// <summary>
+        /// Decodes a json string.
+        /// </summary>
+        /// <param name="json">Json string to decode.</param>
+        /// <returns>The decoded value.</returns>
+        static public T DecodeType<T>(string json)
+        {
+            return DecoderFor<T>().Decode(json);
         }
 
         #if !NET20
@@ -109,6 +128,8 @@ namespace FluentJson
             return new MappedDecoder<T>(configuration);
         }
 
+        #endif
+
         /// <summary>
         ///  Returns a json decoder for the specified configuration.
         /// </summary>
@@ -117,6 +138,8 @@ namespace FluentJson
         static public IJsonDecoder<T> DecoderFor<T>()
         {
             JsonDecodingConfiguration<T> configuration = new JsonDecodingConfiguration<T>();
+            configuration.AutoGenerate();
+
             return new MappedDecoder<T>(configuration);
         }
 
@@ -130,8 +153,6 @@ namespace FluentJson
             JsonDecodingConfiguration<T> configuration = new JsonDecodingConfiguration<T>();
             return configuration;
         }
-
-        #endif
     }
 
     /// <summary>

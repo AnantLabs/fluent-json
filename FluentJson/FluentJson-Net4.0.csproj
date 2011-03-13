@@ -45,6 +45,7 @@
     <Compile Include="Configuration\JsonEncodingConfiguration.cs" />
     <Compile Include="Exceptions\JsonEncodingException.cs" />
     <Compile Include="Exceptions\JsonDecodingException.cs" />
+    <Compile Include="Helpers\TypeHelper.cs" />
     <Compile Include="Json.cs" />
     <Compile Include="JsonDecoder.cs" />
     <Compile Include="JsonEncoder.cs" />

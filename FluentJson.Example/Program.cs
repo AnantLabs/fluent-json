@@ -25,6 +25,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 
@@ -65,7 +66,12 @@ namespace FluentJson.Example
 
         static void Main(string[] args)
         {
+            _example1();
+            _example2();
+            _example3();
             _example4();
+            _example5();
+            _example6();
         }
 
         //***********************************************************************************
@@ -151,7 +157,7 @@ namespace FluentJson.Example
 
         //***********************************************************************************
 
-        // Next examples will depend upon existing config
+        // Next examples could depend upon existing config
         private static void _setup()
         {
             _configuration = Json.ConfigurationFor<Book>()
@@ -195,8 +201,6 @@ namespace FluentJson.Example
 
         private static void _example4()
         {
-            _setup();
-
             IJsonEncoder<IDictionary<string, Author>> encoder = Json.EncoderFor<IDictionary<string, Author>>(config => config
                 .MapType<Author>(map => map
                     .AllFields()
@@ -210,6 +214,40 @@ namespace FluentJson.Example
 
             string json = encoder.Encode(input);
             Console.WriteLine("Example 4:");
+            Console.WriteLine(json);
+            Console.ReadLine();
+        }
+
+        private static void _example5()
+        {
+            IJsonEncoder<IDictionary<string, Author>> encoder = Json.EncoderFor<IDictionary<string, Author>>(config => config
+                .AutoGenerate()
+                .UseTidy(true)
+            );
+
+            Dictionary<string, Author> input = new Dictionary<string, Author>();
+            input.Add("author 1: ", new Author() { forname = "Jules", surname = "Verne" });
+            input.Add("author 2: ", new Author() { forname = "Bob", surname = "Doe" });
+
+            string json = encoder.Encode(input);
+            Console.WriteLine("Example 5:");
+            Console.WriteLine(json);
+            Console.ReadLine();
+        }
+
+        private static void _example6()
+        {
+            Dictionary<string, Author> input = new Dictionary<string, Author>();
+            input.Add("author 1: ", new Author() { forname = "Jules", surname = "Verne" });
+            input.Add("author 2: ", new Author() { forname = "Bob", surname = "Doe" });
+
+            string json = Json.EncodeType<IDictionary<string, Author>>(input);
+            object decoded = Json.Decode(json);
+            json = Json.Encode(decoded);
+
+            IDictionary<string, Author> output = Json.DecodeType<IDictionary<string, Author>>(json);
+
+            Console.WriteLine("Example 6:");
             Console.WriteLine(json);
             Console.ReadLine();
         }
