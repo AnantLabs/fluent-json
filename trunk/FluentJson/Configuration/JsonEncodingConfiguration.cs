@@ -47,15 +47,7 @@ namespace FluentJson.Configuration
 
         #if !NET20
 
-        /// <summary>
-        /// Returns a mapping expression for the root type.
-        /// </summary>
-        /// <param name="expression">The object mapping expression.</param>
-        /// <returns>The configuration.</returns>
-        new public JsonEncodingConfiguration<T> Map(Action<JsonObjectMapping<T>> expression)
-        {
-            return (JsonEncodingConfiguration<T>)base.Map(expression);
-        }
+        internal Func<object, object> PluginPoint { get; private set; }
 
         /// <summary>
         /// Returns a mapping expression for the type TObject.
@@ -63,9 +55,20 @@ namespace FluentJson.Configuration
         /// <typeparam name="TType">Type to map.</typeparam>
         /// <param name="expression">The object mapping expression.</param>
         /// <returns>The configuration.</returns>
-        new public JsonEncodingConfiguration<T> MapType<TType>(Action<JsonObjectMapping<TType>> expression)
+        new public JsonEncodingConfiguration<T> MapType<TType>(Action<JsonTypeMapping<TType>> expression)
         {
             return (JsonEncodingConfiguration<T>)base.MapType<TType>(expression);
+        }
+
+        /// <summary>
+        /// Acts as a plugin point for adding custom logic to the encoding process.
+        /// </summary>
+        /// <param name="plugin">The delegate to call just before encoding a value to a json token.</param>
+        /// <returns>The configuration.</returns>
+        public JsonEncodingConfiguration<T> UsePluginPoint(Func<object, object> plugin)
+        {
+            this.PluginPoint = plugin;
+            return this;
         }
 
         #endif
@@ -88,5 +91,12 @@ namespace FluentJson.Configuration
         {
             return (JsonEncodingConfiguration<T>)base.AutoGenerate();
         }
+
+        #if NET40
+        new public JsonEncodingConfiguration<T> UseParallelProcessing(bool value)
+        {
+            return (JsonEncodingConfiguration<T>)base.UseParallelProcessing(value);
+        }
+        #endif
     }
 }

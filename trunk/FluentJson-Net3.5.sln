@@ -1,8 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FluentJson.Tests", "FluentJson.Tests\FluentJson.Tests.csproj", "{10027B63-DF06-4EF0-978B-E27FAB391C68}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A9D9ABF2-15BA-49EB-A793-5EC11BBB4049}"
 	ProjectSection(SolutionItems) = preProject
 		FluentJson.vsmdi = FluentJson.vsmdi
@@ -25,16 +23,6 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{10027B63-DF06-4EF0-978B-E27FAB391C68}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{10027B63-DF06-4EF0-978B-E27FAB391C68}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{10027B63-DF06-4EF0-978B-E27FAB391C68}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{10027B63-DF06-4EF0-978B-E27FAB391C68}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{10027B63-DF06-4EF0-978B-E27FAB391C68}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{10027B63-DF06-4EF0-978B-E27FAB391C68}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{10027B63-DF06-4EF0-978B-E27FAB391C68}.Release|Any CPU.Build.0 = Release|Any CPU
-		{10027B63-DF06-4EF0-978B-E27FAB391C68}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{10027B63-DF06-4EF0-978B-E27FAB391C68}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{10027B63-DF06-4EF0-978B-E27FAB391C68}.Release|x86.ActiveCfg = Release|Any CPU
 		{E4CBC5EF-B060-458B-8AE7-C561AAFBE46E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{E4CBC5EF-B060-458B-8AE7-C561AAFBE46E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E4CBC5EF-B060-458B-8AE7-C561AAFBE46E}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU

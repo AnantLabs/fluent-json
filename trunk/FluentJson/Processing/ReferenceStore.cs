@@ -26,80 +26,64 @@
 
 using System.Collections.Generic;
 
-namespace FluentJson.Mapping
+namespace FluentJson.Processing
 {
-    /// <summary>
-    /// Used internally for storing references while encoding or decoding.
-    /// </summary>
     internal class ReferenceStore
     {
         /// <summary>
-        /// object to reference
+        /// Get reference by object
         /// </summary>
-        private Dictionary<object, double> _references;
+        private Dictionary<object, double> _to;
 
         /// <summary>
-        /// reference to object
+        /// Get object from reference
         /// </summary>
-        private Dictionary<double, object> _objects;
+        private Dictionary<double, object> _from;
 
         internal ReferenceStore()
         {
-            _references = new Dictionary<object, double>();
-            _objects = new Dictionary<double, object>();
+            _to = new Dictionary<object, double>();
+            _from = new Dictionary<double, object>();
         }
 
         /// <summary>
-        /// Creates a numerical reference to the given object.
+        /// Returns the object the given reference points to.
         /// </summary>
-        /// <param name="value"></param>
-        internal void StoreObject(object value)
+        /// <param name="reference"></param>
+        /// <returns></returns>
+        internal object FollowReference(double reference)
         {
-            if (!_references.ContainsKey(value))
-            {
-                _references.Add(value, _references.Count);
-                _objects.Add(_objects.Count, value);
-            }
+            return _from[reference];
         }
 
         /// <summary>
-        /// Sees if a numerical reference is stored for the given object.
+        /// Indicates wether this store contains a reference to the given object.
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
         internal bool HasReferenceTo(object value)
         {
-            return _references.ContainsKey(value);
+            return _to.ContainsKey(value);
         }
 
         /// <summary>
-        /// Gets the numerical reference to the given object.
+        /// Returns the reference value for the given object.
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
         internal double GetReferenceTo(object value)
         {
-            return _references[value];
+            return _to[value];
         }
 
         /// <summary>
-        /// Sees if this numerical value actually points to an object.
+        /// Creates a reference for the given object.
         /// </summary>
         /// <param name="value"></param>
-        /// <returns></returns>
-        internal bool IsReference(double value)
+        internal void Reference(object value)
         {
-            return _objects.ContainsKey(value);
-        }
-
-        /// <summary>
-        /// Resolves the object from the given numerical reference.
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        internal object GetFromReference(double value)
-        {
-            return _objects[value];
+            _to.Add(value, _to.Count);
+            _from.Add(_from.Count, value);
         }
     }
 }

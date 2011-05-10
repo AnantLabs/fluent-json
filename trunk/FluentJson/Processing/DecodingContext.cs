@@ -25,57 +25,37 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 using System;
+using System.Collections.Generic;
 
-using FluentJson.Mapping;
-
-namespace FluentJson.Configuration
+namespace FluentJson.Processing
 {
-    public class JsonDecodingConfiguration<T> : JsonConfiguration<T>
+    internal class DecodingContext : Context
     {
-        #if !NET20
-        internal Func<object, object> PluginPoint { get; private set; }
+        /// <summary>
+        /// Decoded value.
+        /// </summary>
+        internal object Value { get; set; }
 
         /// <summary>
-        /// Returns a mapping expression for the type TObject.
+        /// Available strong type, otherwise null
         /// </summary>
-        /// <typeparam name="TObject">Type to map.</typeparam>
-        /// <param name="expression">The object mapping expression.</param>
-        /// <returns>The configuration.</returns>
-        new public JsonDecodingConfiguration<T> MapType<TType>(Action<JsonTypeMapping<TType>> expression)
-        {
-            return (JsonDecodingConfiguration<T>)base.MapType<TType>(expression);
-        }
+        internal Type KnownType { get; private set; }
 
         /// <summary>
-        /// Acts as a plugin point for adding custom logic to the decoding process.
+        /// Json token sequence to read from.
         /// </summary>
-        /// <param name="plugin">The delegate to call just after a json token has been decoded to a value.</param>
-        /// <returns>The configuration.</returns>
-        public JsonDecodingConfiguration<T> UsePluginPoint(Func<object, object> plugin)
-        {
-            this.PluginPoint = plugin;
-            return this;
-        }
-
-        #endif
+        internal JsonTokenSequence Input { get; set; }
 
         /// <summary>
-        /// Derives this configuration from an existing configuration.
+        /// 
         /// </summary>
-        /// <param name="configuration">The configuration to derive from.</param>
-        /// <returns>The configuration.</returns>
-        new public JsonDecodingConfiguration<T> DeriveFrom(JsonConfiguration<T> configuration)
+        /// <param name="json"></param>
+        /// <param name="value"></param>
+        /// <param name="knownType"></param>
+        internal DecodingContext(Process process, JsonTokenSequence input, Type knownType) : base(process)
         {
-            return (JsonDecodingConfiguration<T>)base.DeriveFrom(configuration);
-        }
-
-        /// <summary>
-        /// Automatically generates a configuration for the current type.
-        /// </summary>
-        /// <returns>The configuration.</returns>
-        new public JsonDecodingConfiguration<T> AutoGenerate()
-        {
-            return (JsonDecodingConfiguration<T>)base.AutoGenerate();
+            this.Input = input;
+            this.KnownType = knownType;
         }
     }
 }

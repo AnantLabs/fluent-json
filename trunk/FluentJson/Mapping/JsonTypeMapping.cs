@@ -24,7 +24,6 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-
 using System;
 using System.Collections.Generic;
 
@@ -36,24 +35,25 @@ using System.Reflection;
 
 namespace FluentJson.Mapping
 {
-    abstract public class JsonObjectMappingBase : ICloneable
+    abstract public class JsonTypeMappingBase : ICloneable
     {
         internal bool UsesReferencing { get; set; }
-        internal Dictionary<MemberInfo, JsonFieldMappingBase> FieldMappings { get; private set; }
-        internal JsonObjectMappingBase()
+        internal Dictionary<string, JsonFieldMappingBase> FieldMappings { get; private set; }
+
+        internal JsonTypeMappingBase()
         {
-            this.FieldMappings = new Dictionary<MemberInfo, JsonFieldMappingBase>();
+            this.FieldMappings = new Dictionary<string, JsonFieldMappingBase>();
         }
 
         abstract public object Clone();
         abstract internal void AutoGenerate();
     }
 
-    public class JsonObjectMapping<T> : JsonObjectMappingBase
+    public class JsonTypeMapping<T> : JsonTypeMappingBase
     {
         private List<MemberInfo> _exludes;
 
-        public JsonObjectMapping()
+        public JsonTypeMapping()
         {
             _exludes = new List<MemberInfo>();
         }
@@ -61,10 +61,10 @@ namespace FluentJson.Mapping
         #region ICloneable Members
         public override object Clone()
         {
-            JsonObjectMapping<T> clone = new JsonObjectMapping<T>();
+            JsonTypeMapping<T> clone = new JsonTypeMapping<T>();
             clone.UsesReferencing = this.UsesReferencing;
 
-            Dictionary<MemberInfo, JsonFieldMappingBase>.Enumerator enumerator = this.FieldMappings.GetEnumerator();
+            Dictionary<string, JsonFieldMappingBase>.Enumerator enumerator = this.FieldMappings.GetEnumerator();
             while (enumerator.MoveNext())
             {
                 clone.FieldMappings.Add(enumerator.Current.Key, (JsonFieldMappingBase)enumerator.Current.Value.Clone());
@@ -84,7 +84,7 @@ namespace FluentJson.Mapping
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        public JsonObjectMapping<T> UseReferencing(bool value)
+        public JsonTypeMapping<T> UseReferencing(bool value)
         {
             this.UsesReferencing = value;
             return this;
@@ -94,7 +94,7 @@ namespace FluentJson.Mapping
         /// Maps all fields automatically, except any excluded fields.
         /// </summary>
         /// <returns></returns>
-        public JsonObjectMapping<T> AllFields()
+        public JsonTypeMapping<T> AllFields()
         {
             List<MemberInfo> members = new List<MemberInfo>();
             members.AddRange(typeof(T).GetFields());
@@ -102,7 +102,7 @@ namespace FluentJson.Mapping
 
             foreach (MemberInfo memberInfo in members)
             {
-                _mapMember(memberInfo, new JsonFieldMapping<object>(memberInfo));
+                _addFieldMapping(new JsonFieldMapping<object>(memberInfo));
             }
 
             return this;
@@ -115,10 +115,10 @@ namespace FluentJson.Mapping
         /// </summary>
         /// <param name="fieldExpression"></param>
         /// <returns></returns>
-        public JsonObjectMapping<T> Field(Expression<Func<T, object>> fieldExpression)
+        public JsonTypeMapping<T> Field(Expression<Func<T, object>> fieldExpression)
         {
             MemberInfo memberInfo = _getAccessedMemberInfo(fieldExpression);
-            _mapMember(memberInfo, new JsonFieldMapping<object>(memberInfo, memberInfo.Name));
+            _addFieldMapping(new JsonFieldMapping<object>(memberInfo, memberInfo.Name));
 
             return this;
         }
@@ -129,10 +129,10 @@ namespace FluentJson.Mapping
         /// <param name="fieldExpression"></param>
         /// <param name="jsonObjectField"></param>
         /// <returns></returns>
-        public JsonObjectMapping<T> FieldTo(Expression<Func<T, object>> fieldExpression, string jsonObjectField)
+        public JsonTypeMapping<T> FieldTo(Expression<Func<T, object>> fieldExpression, string jsonObjectField)
         {
             MemberInfo memberInfo = _getAccessedMemberInfo(fieldExpression);
-            _mapMember(memberInfo, new JsonFieldMapping<object>(memberInfo, jsonObjectField));
+            _addFieldMapping(new JsonFieldMapping<object>(memberInfo, jsonObjectField));
 
             return this;
         }
@@ -144,14 +144,14 @@ namespace FluentJson.Mapping
         /// <param name="fieldExpression"></param>
         /// <param name="mappingExpression"></param>
         /// <returns></returns>
-        public JsonObjectMapping<T> Field<TField>(Expression<Func<T, TField>> fieldExpression, Action<JsonFieldMapping<TField>> mappingExpression)
+        public JsonTypeMapping<T> Field<TField>(Expression<Func<T, TField>> fieldExpression, Action<JsonFieldMapping<TField>> mappingExpression)
         {
             MemberInfo memberInfo = _getAccessedMemberInfo<TField>(fieldExpression);
 
             JsonFieldMapping<TField> fieldMapping = new JsonFieldMapping<TField>(memberInfo);
             mappingExpression(fieldMapping);
 
-            _mapMember(memberInfo, fieldMapping);
+            _addFieldMapping(fieldMapping);
 
             return this;
         }
@@ -161,7 +161,7 @@ namespace FluentJson.Mapping
         /// </summary>
         /// <param name="fieldExpression"></param>
         /// <returns></returns>
-        public JsonObjectMapping<T> ExceptField(Expression<Func<T, object>> fieldExpression)
+        public JsonTypeMapping<T> ExceptField(Expression<Func<T, object>> fieldExpression)
         {
             MemberInfo memberInfo = _getAccessedMemberInfo(fieldExpression);
 
@@ -170,12 +170,19 @@ namespace FluentJson.Mapping
                 throw new Exception("The member '" + memberInfo.Name + "' is already excluded.");
             }
 
-            if (FieldMappings.ContainsKey(memberInfo))
+            _exludes.Add(memberInfo);
+            
+            // See if the excluded member is already mapped, if so remove.
+            Dictionary<string, JsonFieldMappingBase>.Enumerator enumerator = this.FieldMappings.GetEnumerator();
+            while (enumerator.MoveNext())
             {
-                this.FieldMappings.Remove(memberInfo);
+                if (enumerator.Current.Value.ReflectedField.Name == memberInfo.Name)
+                {
+                    this.FieldMappings.Remove(enumerator.Current.Key);
+                    break;
+                }
             }
 
-            _exludes.Add(memberInfo);
             return this;
         }
         
@@ -215,35 +222,26 @@ namespace FluentJson.Mapping
             this.AllFields();
         }
 
-        private void _mapMember(MemberInfo memberInfo, JsonFieldMappingBase fieldMapping)
+        private void _addFieldMapping(JsonFieldMappingBase fieldMapping)
         {
-            if (!_exludes.Contains(memberInfo))
+            if (!_exludes.Contains(fieldMapping.ReflectedField))
             {
-                if (this.FieldMappings.ContainsKey(memberInfo))
+                if (this.FieldMappings.ContainsKey(fieldMapping.JsonField) && this.FieldMappings[fieldMapping.JsonField].ReflectedField.Name != fieldMapping.ReflectedField.Name)
                 {
-                    this.FieldMappings[memberInfo] = fieldMapping;
+                    throw new Exception();
                 }
-                else
-                {
-                    // Mismatch could have occured (due to different MemberInfo.ReflectedType)
-                    MemberInfo overriden = null;
-                    foreach (MemberInfo key in this.FieldMappings.Keys)
-                    {
-                        if (key.Name == memberInfo.Name)
-                        {
-                            overriden = key;
-                            break;
-                        }
-                    }
-                    
-                    // Remove deprecated entry
-                    if (overriden != null)
-                    {
-                        this.FieldMappings.Remove(overriden);
-                    }
 
-                    this.FieldMappings.Add(memberInfo, fieldMapping);
+                Dictionary<string, JsonFieldMappingBase>.Enumerator enumerator = this.FieldMappings.GetEnumerator();
+                while (enumerator.MoveNext())
+                {
+                    if (enumerator.Current.Value.ReflectedField.Name == fieldMapping.ReflectedField.Name)
+                    {
+                        this.FieldMappings.Remove(enumerator.Current.Key);
+                        break;
+                    }
                 }
+
+                this.FieldMappings.Add(fieldMapping.JsonField, fieldMapping);
             }
         }
     }

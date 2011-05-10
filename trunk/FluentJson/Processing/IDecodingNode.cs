@@ -25,18 +25,20 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 using System;
+using System.Collections.Generic;
 
-namespace FluentJson.Exceptions
+namespace FluentJson.Processing
 {
-    internal class JsonEncodingException : Exception
+    /// <summary>
+    /// Forms part of an decoding chain.
+    /// </summary>
+    internal interface IDecodingNode
     {
-        public object RelatedValue { get; private set; }
-
-        internal JsonEncodingException(string message, object relatedValue, Exception innerException) : base(message, innerException)
-        {
-            this.RelatedValue = relatedValue;
-        }
-
-        internal JsonEncodingException(string message, object relatedValue) : this(message, relatedValue, null) { }
+        /// <summary>
+        /// Implementations can perform decoding routines upon the given context here.
+        /// </summary>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        IEnumerable<DecodingInstruction> ExecuteDecode(DecodingContext context);
     }
 }

@@ -39,11 +39,12 @@ namespace FluentJson.Configuration
     /// <typeparam name="T"></typeparam>
     public class JsonConfiguration<T>
     {
-        internal Dictionary<Type, JsonObjectMappingBase> Mappings { get; private set; }
+        internal Dictionary<Type, JsonTypeMappingBase> Mappings { get; private set; }
+        internal bool UsesParallelProcessing { get; private set; }
 
         internal JsonConfiguration()
         {
-            this.Mappings = new Dictionary<Type, JsonObjectMappingBase>();
+            this.Mappings = new Dictionary<Type, JsonTypeMappingBase>();
         }
 
         /// <summary>
@@ -53,7 +54,7 @@ namespace FluentJson.Configuration
         public JsonConfiguration<T> AutoGenerate()
         {
             // Reset
-            this.Mappings = new Dictionary<Type, JsonObjectMappingBase>();
+            this.Mappings = new Dictionary<Type, JsonTypeMappingBase>();
 
             Stack<Type> mapped = new Stack<Type>();
             Stack<Type> unmapped = new Stack<Type>();
@@ -69,7 +70,7 @@ namespace FluentJson.Configuration
                 Type type = unmapped.Pop();
                 mapped.Push(type);
 
-                JsonObjectMappingBase mapping = (JsonObjectMappingBase)Activator.CreateInstance(typeof(JsonObjectMapping<>).MakeGenericType(type));
+                JsonTypeMappingBase mapping = (JsonTypeMappingBase)Activator.CreateInstance(typeof(JsonTypeMapping<>).MakeGenericType(type));
                 _addMapping(mapping);
 
                 mapping.AutoGenerate();
@@ -92,14 +93,24 @@ namespace FluentJson.Configuration
         /// </summary>
         /// <param name="configuration">The configuration to derive from.</param>
         /// <returns>The configuration.</returns>
+        public JsonTypeMapping<TType> GetMapping<TType>()
+        {
+            return (JsonTypeMapping<TType>)this.Mappings[typeof(TType)];
+        }
+
+        /// <summary>
+        /// Derives this configuration from an existing configuration.
+        /// </summary>
+        /// <param name="configuration">The configuration to derive from.</param>
+        /// <returns>The configuration.</returns>
         public JsonConfiguration<T> DeriveFrom(JsonConfiguration<T> configuration)
         {
-            this.Mappings = new Dictionary<Type, JsonObjectMappingBase>();
+            this.Mappings = new Dictionary<Type, JsonTypeMappingBase>();
 
-            Dictionary<Type, JsonObjectMappingBase>.Enumerator enumerator = configuration.Mappings.GetEnumerator();
+            Dictionary<Type, JsonTypeMappingBase>.Enumerator enumerator = configuration.Mappings.GetEnumerator();
             while (enumerator.MoveNext())
             {
-                _addMapping((JsonObjectMappingBase)enumerator.Current.Value.Clone());
+                _addMapping((JsonTypeMappingBase)enumerator.Current.Value.Clone());
             }
 
             return this;
@@ -110,7 +121,7 @@ namespace FluentJson.Configuration
         /// </summary>
         /// <param name="expression">The object mapping expression.</param>
         /// <returns>The configuration.</returns>
-        public JsonConfiguration<T> WithMapping(JsonObjectMappingBase mapping)
+        public JsonConfiguration<T> WithMapping(JsonTypeMappingBase mapping)
         {
             _addMapping(mapping);
             return this;
@@ -119,32 +130,22 @@ namespace FluentJson.Configuration
         #if !NET20
 
         /// <summary>
-        /// Returns a mapping expression for the root type.
-        /// </summary>
-        /// <param name="expression">The object mapping expression.</param>
-        /// <returns>The configuration.</returns>
-        public JsonConfiguration<T> Map(Action<JsonObjectMapping<T>> expression)
-        {
-            return MapType<T>(expression);
-        }
-
-        /// <summary>
         /// Returns a mapping expression for the type TObject.
         /// </summary>
         /// <typeparam name="TObject">Type to map.</typeparam>
         /// <param name="expression">The object mapping expression.</param>
         /// <returns>The configuration.</returns>
-        public JsonConfiguration<T> MapType<TType>(Action<JsonObjectMapping<TType>> expression)
+        public JsonConfiguration<T> MapType<TType>(Action<JsonTypeMapping<TType>> expression)
         {
-            JsonObjectMapping<TType> mapping = null;
+            JsonTypeMapping<TType> mapping = null;
             if (!this.Mappings.ContainsKey(typeof(TType)))
             {
-                mapping = new JsonObjectMapping<TType>();
+                mapping = new JsonTypeMapping<TType>();
                 _addMapping(mapping);
             }
             else
             {
-                mapping = (JsonObjectMapping<TType>)this.Mappings[typeof(TType)];
+                mapping = (JsonTypeMapping<TType>)this.Mappings[typeof(TType)];
             }
 
 
@@ -154,7 +155,20 @@ namespace FluentJson.Configuration
 
         #endif
 
-        private void _addMapping(JsonObjectMappingBase mapping)
+        #if NET40
+        /// <summary>
+        /// Enable or disable parallel processing.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public JsonConfiguration<T> UseParallelProcessing(bool value)
+        {
+            this.UsesParallelProcessing = value;
+            return this;
+        }
+        #endif
+
+        private void _addMapping(JsonTypeMappingBase mapping)
         {
             Type type = mapping.GetType().GetGenericArguments()[0];
             if (!type.IsInterface)
@@ -189,6 +203,10 @@ namespace FluentJson.Configuration
                     result = type.GetGenericArguments()[1];
                 }
             }
+            else if (type.IsArray)
+            {
+                result = type.GetElementType();
+            }
 
             if (_shouldMapType(result))
             {
@@ -200,14 +218,7 @@ namespace FluentJson.Configuration
 
         private bool _shouldMapType(Type type)
         {
-            // Exluce types from the System assembly
-            if (type.Assembly != typeof(string).Assembly)
-            {
-                // Only allow nested types from the same assembly as type T
-                return type.Assembly == typeof(T).Assembly;
-            }
-
-            return false;
+            return !TypeHelper.IsBasic(type) && !TypeHelper.IsDictionary(type) && !TypeHelper.IsList(type) && type != typeof(object);
         }
     }
 }

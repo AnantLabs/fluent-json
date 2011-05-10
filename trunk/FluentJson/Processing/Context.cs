@@ -24,22 +24,25 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-namespace FluentJson
+
+using System.Collections.Generic;
+using FluentJson.Mapping;
+
+namespace FluentJson.Processing
 {
-    internal class JsonTokenType
+    /// <summary>
+    /// 
+    /// </summary>
+    internal class Context
     {
-        internal const char String = '\"';
-        internal const string True = "true";
-        internal const string False = "false";
-        internal const string Null = "null";
+        /// <summary>
+        /// The process providing this context.
+        /// </summary>
+        internal Process Process { get; private set; }
 
-        internal const char ArrayStart = '[';
-        internal const char ArrayEnd = ']';
-
-        internal const char ObjectStart = '{';
-        internal const char ObjectEnd = '}';
-
-        internal const char ElementSeperator = ',';
-        internal const char PairSeperator = ':';
+        internal Context(Process process)
+        {
+            this.Process = process;
+        }
     }
 }

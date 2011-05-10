@@ -25,18 +25,42 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 using System;
+using System.Collections.Generic;
 
-namespace FluentJson.Exceptions
+namespace FluentJson.Processing
 {
-    internal class JsonDecodingException : Exception
+    /// <summary>
+    /// 
+    /// </summary>
+    internal class EncodingContext : Context
     {
-        public string RelatedJson { get; private set; }
+        /// <summary>
+        /// Value to encode.
+        /// </summary>
+        internal object Value { get; set; }
 
-        internal JsonDecodingException(string message, string relatedJson, Exception innerException) : base(message, innerException)
+        /// <summary>
+        /// Available strong type, otherwise null.
+        /// </summary>
+        internal Type KnownType { get; private set; }
+
+        /// <summary>
+        /// Json token sequence for writing output to.
+        /// </summary>
+        internal JsonTokenSequence Output { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="json"></param>
+        /// <param name="value"></param>
+        /// <param name="knownType"></param>
+        internal EncodingContext(Process process, object value, Type knownType) : base(process)
         {
-            this.RelatedJson = relatedJson;
-        }
+            this.Value = value;
+            this.KnownType = knownType;
 
-        internal JsonDecodingException(string message, string relatedJson) : this(message, relatedJson, null) { }
+            this.Output = new JsonTokenSequence();
+        }
     }
 }
