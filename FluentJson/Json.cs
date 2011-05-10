@@ -27,7 +27,7 @@
 using System;
 
 using FluentJson.Configuration;
-using FluentJson.Mapping;
+using FluentJson.Processing;
 
 namespace FluentJson
 {
@@ -36,22 +36,18 @@ namespace FluentJson
     /// </summary>
     public class Json
     {
-        static private JsonEncoder _defaultEncoder;
-        static private JsonDecoder _defaultDecoder;
-
         /// <summary>
-        /// Encodes a value to a json string.
+        /// Encodes any value to a json string.
         /// </summary>
         /// <param name="value">Value to encode.</param>
         /// <returns>A json string.</returns>
         static public string Encode(object value)
         {
-            if(_defaultEncoder == null) _defaultEncoder = new JsonEncoder();
-            return _defaultEncoder.Encode(value);
+            return new JsonEncoder<object>(new JsonEncodingConfiguration<object>()).Encode(value);
         }
 
         /// <summary>
-        /// Encodes a value to a json string.
+        /// Encodes a value of type T to a json string. Type T will be automatically mapped as best as possible.
         /// </summary>
         /// <param name="value">Value to encode.</param>
         /// <returns>A json string.</returns>
@@ -68,27 +64,27 @@ namespace FluentJson
         /// <typeparam name="T">Type to encode.</typeparam>
         /// <param name="expression">Configuration expression.</param>
         /// <returns>An encoder for type T.</returns>
-        static public IJsonEncoder<T> EncoderFor<T>(Action<JsonEncodingConfiguration<T>> expression)
+        static public JsonEncoder<T> EncoderFor<T>(Action<JsonEncodingConfiguration<T>> expression)
         {
             JsonEncodingConfiguration<T> configuration = new JsonEncodingConfiguration<T>();
             expression(configuration);
 
-            return new MappedEncoder<T>(configuration);
+            return new JsonEncoder<T>(configuration);
         }
 
         #endif
 
         /// <summary>
-        /// Returns a json encoder for the specified type.
+        /// Returns a json encoder for the specified type. Type T will be automatically mapped as best as possible.
         /// </summary>
         /// <typeparam name="T">Type to encode.</typeparam>
         /// <returns>An encoder for type T.</returns>
-        static public IJsonEncoder<T> EncoderFor<T>()
+        static public JsonEncoder<T> EncoderFor<T>()
         {
             JsonEncodingConfiguration<T> configuration = new JsonEncodingConfiguration<T>();
             configuration.AutoGenerate();
 
-            return new MappedEncoder<T>(configuration);
+            return new JsonEncoder<T>(configuration);
         }
 
         /// <summary>
@@ -98,12 +94,11 @@ namespace FluentJson
         /// <returns>The decoded value.</returns>
         static public object Decode(string json)
         {
-            if(_defaultDecoder == null) _defaultDecoder = new JsonDecoder();
-            return _defaultDecoder.Decode(json);
+            return new JsonDecoder<object>(new JsonDecodingConfiguration<object>()).Decode(json);
         }
 
         /// <summary>
-        /// Decodes a json string.
+        /// Decodes a json string to type T. Type T will be automatically mapped as best as possible.
         /// </summary>
         /// <param name="json">Json string to decode.</param>
         /// <returns>The decoded value.</returns>
@@ -120,35 +115,57 @@ namespace FluentJson
         /// <typeparam name="T">Type to decode.</typeparam>
         /// <param name="expression">Configuration expression.</param>
         /// <returns>A decoder for type T.</returns>
-        static public IJsonDecoder<T> DecoderFor<T>(Action<JsonDecodingConfiguration<T>> expression)
+        static public JsonDecoder<T> DecoderFor<T>(Action<JsonDecodingConfiguration<T>> expression)
         {
             JsonDecodingConfiguration<T> configuration = new JsonDecodingConfiguration<T>();
             expression(configuration);
 
-            return new MappedDecoder<T>(configuration);
+            return new JsonDecoder<T>(configuration);
         }
 
         #endif
 
         /// <summary>
-        ///  Returns a json decoder for the specified configuration.
+        ///  Returns a json decoder for the specified configuration. Type T will be automatically mapped as best as possible.
         /// </summary>
         /// <typeparam name="T">Type to decode.</typeparam>
         /// <returns>A decoder for type T.</returns>
-        static public IJsonDecoder<T> DecoderFor<T>()
+        static public JsonDecoder<T> DecoderFor<T>()
         {
             JsonDecodingConfiguration<T> configuration = new JsonDecodingConfiguration<T>();
             configuration.AutoGenerate();
 
-            return new MappedDecoder<T>(configuration);
+            return new JsonDecoder<T>(configuration);
         }
 
         /// <summary>
-        /// Returns a configuration for the specified type T.
+        /// Returns an empty base configuration for the specified type T.
         /// </summary>
         /// <typeparam name="T">Type to create configuration for.</typeparam>
         /// <returns>A configuration for type T.</returns>
         static public JsonConfiguration<T> ConfigurationFor<T>()
+        {
+            JsonConfiguration<T> configuration = new JsonConfiguration<T>();
+            return configuration;
+        }
+
+        /// <summary>
+        /// Returns an empty encoding configuration for the specified type T.
+        /// </summary>
+        /// <typeparam name="T">Type to create configuration for.</typeparam>
+        /// <returns>A configuration for type T.</returns>
+        static public JsonEncodingConfiguration<T> EncodingConfigurationFor<T>()
+        {
+            JsonEncodingConfiguration<T> configuration = new JsonEncodingConfiguration<T>();
+            return configuration;
+        }
+
+        /// <summary>
+        /// Returns an empty decoding configuration for the specified type T.
+        /// </summary>
+        /// <typeparam name="T">Type to create configuration for.</typeparam>
+        /// <returns>A configuration for type T.</returns>
+        static public JsonDecodingConfiguration<T> DecodingConfigurationFor<T>()
         {
             JsonDecodingConfiguration<T> configuration = new JsonDecodingConfiguration<T>();
             return configuration;
@@ -156,57 +173,51 @@ namespace FluentJson
     }
 
     /// <summary>
-    /// Defines a json encoder.
-    /// </summary>
-    public interface IJsonEncoder
-    {
-        /// <summary>
-        /// Encodes a value to a json string.
-        /// </summary>
-        /// <param name="value">Value to encode.</param>
-        /// <returns>A json string.</returns>
-        string Encode(object value);
-    }
-
-    /// <summary>
     /// Defines a json encoder for type T.
     /// </summary>
     /// <typeparam name="T">Type to encode.</typeparam>
-    public interface IJsonEncoder<T>
+    public class JsonEncoder<T>
     {
+        private JsonEncodingConfiguration<T> _configuration;
+
+        internal JsonEncoder(JsonEncodingConfiguration<T> configuration)
+        {
+            _configuration = configuration;
+        }
+
         /// <summary>
         /// Encodes a value to a json string.
         /// </summary>
         /// <param name="value">Value of type T to encode.</param>
         /// <returns>A json string.</returns>
-        string Encode(T value);
-    }
-
-    /// <summary>
-    /// Defines a json decoder.
-    /// </summary>
-    public interface IJsonDecoder
-    {
-        /// <summary>
-        /// Decodes a json string.
-        /// </summary>
-        /// <param name="json">Json string to decode.</param>
-        /// <returns>The decoded value.</returns>
-        object Decode(string json);
+        public string Encode(T value)
+        {
+            return new EncodingProcess<T>(_configuration).Encode(value);
+        }
     }
 
     /// <summary>
     /// Defines a json decoder for type T.
     /// </summary>
     /// <typeparam name="T">Type to decode.</typeparam>
-    public interface IJsonDecoder<T>
+    public class JsonDecoder<T>
     {
+        private JsonDecodingConfiguration<T> _configuration;
+
+        internal JsonDecoder(JsonDecodingConfiguration<T> configuration)
+        {
+            _configuration = configuration;
+        }
+
         /// <summary>
         /// Decodes a json string.
         /// </summary>
         /// <param name="json">Json string to decode.</param>
         /// <returns>The decoded value of type T.</returns>
-        T Decode(string json);
+        public T Decode(string json)
+        {
+            return new DecodingProcess<T>(_configuration).Decode(json);
+        }
     }
 }
 

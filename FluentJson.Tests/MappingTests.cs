@@ -55,6 +55,15 @@ namespace FluentJson.Tests
         }
 
         [TestMethod]
+        public void TestCollections()
+        {
+            Json.DecodeType<string[][]>(Json.EncodeType<string[][]>(new string[][] { new string[] { "a", "string" } }));
+            Json.DecodeType<string[]>(Json.EncodeType<string[]>(new string[] { "a", "string" }));
+            Json.DecodeType<Something[]>(Json.EncodeType<Something[]>(new Something[] { new Something(), new Something() }));
+        }
+
+
+        [TestMethod]
         public void TestCollectionConversion()
         {
             Json.DecodeType<IList<string>>(Json.EncodeType<IList<string>>(new string[] { "a", "string" }));
@@ -91,7 +100,7 @@ namespace FluentJson.Tests
             input.publicationDate = new DateTime(1900, 12, 4);
 
             string json = Json.EncoderFor<Book>(config => config
-                .Map(map => map
+                .MapType<Book>(map => map
                     .AllFields()
                     .Field<DateTime>(book => book.publicationDate, field => field
                         .EncodeAs<string>(publicationDate => publicationDate.ToString())
@@ -101,7 +110,7 @@ namespace FluentJson.Tests
             ).Encode(input);
 
             Book output = Json.DecoderFor<Book>(config => config
-                .Map(map => map
+                .MapType<Book>(map => map
                     .AllFields()
                     .Field<DateTime>(book => book.publicationDate, field => field
                         .DecodeAs<string>(publicationDate => DateTime.Parse(publicationDate))
@@ -113,6 +122,12 @@ namespace FluentJson.Tests
             Assert.AreEqual(input, output);
         }
 
+        class Something
+        {
+            public string aString = "something";
+            public int aInteger = 7037;
+        }
+        
         class Book 
         {
             public string title;
@@ -141,7 +156,7 @@ namespace FluentJson.Tests
             a.relatedTo = new List<RelatedBook> { b, input };
 
             string json = Json.EncoderFor<RelatedBook>(config => config
-                .Map(map => map
+                .MapType<RelatedBook>(map => map
                     .AllFields()
                     .Field<DateTime>(book => book.publicationDate, field => field
                         .EncodeAs<string>(publicationDate => publicationDate.ToString())
@@ -152,7 +167,7 @@ namespace FluentJson.Tests
             ).Encode(input);
 
             RelatedBook output = Json.DecoderFor<RelatedBook>(config => config
-                .Map(map => map
+                .MapType<RelatedBook>(map => map
                     .AllFields()
                     .Field<DateTime>(book => book.publicationDate, field => field
                         .DecodeAs<string>(publicationDate => DateTime.Parse(publicationDate))

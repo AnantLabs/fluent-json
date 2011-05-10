@@ -22,6 +22,7 @@
     <DefineConstants>TRACE;DEBUG;NET40</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -40,21 +41,33 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Exceptions\JsonException.cs" />
+    <Compile Include="JsonToken.cs" />
+    <Compile Include="JsonTokenSequence.cs" />
+    <Compile Include="Processing\Context.cs" />
+    <Compile Include="Processing\DecodingContext.cs" />
+    <Compile Include="Processing\DecodingInstruction.cs" />
+    <Compile Include="Processing\DecodingProcess.cs" />
+    <Compile Include="Processing\EncodingContext.cs" />
+    <Compile Include="Processing\EncodingInstruction.cs" />
+    <Compile Include="Processing\IDecodingNode.cs" />
+    <Compile Include="Processing\IEncodingNode.cs" />
     <Compile Include="Configuration\JsonDecodingConfiguration.cs" />
     <Compile Include="Configuration\JsonConfiguration.cs" />
     <Compile Include="Configuration\JsonEncodingConfiguration.cs" />
-    <Compile Include="Exceptions\JsonEncodingException.cs" />
-    <Compile Include="Exceptions\JsonDecodingException.cs" />
+    <Compile Include="Processing\EncodingProcess.cs" />
     <Compile Include="Helpers\TypeHelper.cs" />
     <Compile Include="Json.cs" />
-    <Compile Include="JsonDecoder.cs" />
-    <Compile Include="JsonEncoder.cs" />
-    <Compile Include="JsonTokenType.cs" />
     <Compile Include="Mapping\JsonFieldMapping.cs" />
-    <Compile Include="Mapping\JsonObjectMapping.cs" />
-    <Compile Include="Mapping\MappedDecoder.cs" />
-    <Compile Include="Mapping\MappedEncoder.cs" />
-    <Compile Include="Mapping\ReferenceStore.cs" />
+    <Compile Include="Mapping\JsonTypeMapping.cs" />
+    <Compile Include="Processing\Nodes\PluginPointNode.cs" />
+    <Compile Include="Processing\Nodes\ResolveNextNode.cs" />
+    <Compile Include="Processing\Nodes\ValueNode.cs" />
+    <Compile Include="Processing\Nodes\DictNode.cs" />
+    <Compile Include="Processing\Nodes\ListNode.cs" />
+    <Compile Include="Processing\Nodes\MappingNode.cs" />
+    <Compile Include="Processing\Process.cs" />
+    <Compile Include="Processing\ReferenceStore.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup />

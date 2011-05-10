@@ -27,9 +27,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
+using System.Diagnostics;
+using System.Dynamic;
 
-using FluentJson.Mapping;
 using FluentJson.Configuration;
 
 namespace FluentJson.Example
@@ -72,14 +72,60 @@ namespace FluentJson.Example
             _example4();
             _example5();
             _example6();
+            _example7();
+            _example8();
+            _example9();
+        }
+
+        private static void _printJson(string json)
+        {
+            Console.WriteLine();
+            Console.BackgroundColor = ConsoleColor.DarkMagenta;
+
+            string structural = "{}[],:";
+
+            Stack<bool> isObject = new Stack<bool>();
+            bool isField = false;
+
+            foreach (char c in json)
+            {
+                Console.ForegroundColor = ConsoleColor.White;
+
+                if (c == '{' || c == '[')
+                {
+                    isObject.Push(c == '{');
+                    isField = c == '{';
+                }
+                else if (c == '}' || c == ']')
+                {
+                    isObject.Pop();
+                    isField = false;
+                }
+                else if (c == ',' && isObject.Peek())
+                    isField = true;
+                else if (c == ':')
+                    isField = false;
+
+                // Set color
+                if (structural.Contains(c.ToString()))
+                    Console.ForegroundColor = ConsoleColor.Cyan;
+                else if (isField)
+                    Console.ForegroundColor = ConsoleColor.Magenta;
+
+                Console.Write(c);
+            }
+
+            Console.BackgroundColor = ConsoleColor.Black;
+            Console.ForegroundColor = ConsoleColor.Gray;
+            Console.WriteLine();
         }
 
         //***********************************************************************************
         private static void _example1()
         {
             // Encode Book A
-            IJsonEncoder<Book> encoder = Json.EncoderFor<Book>(config => config
-                .Map(map => map
+            JsonEncoder<Book> encoder = Json.EncoderFor<Book>(config => config
+                .MapType<Book>(map => map
                     .AllFields()
 
                     // DateTime can't be encoded to json. Unless we convert it,
@@ -110,9 +156,9 @@ namespace FluentJson.Example
                 .UseTidy(true)
             );
 
-            string json = encoder.Encode(Program.bookA);
             Console.WriteLine("Example 1:");
-            Console.WriteLine(json);
+            string json = encoder.Encode(Program.bookA);
+            _printJson(json);
             Console.ReadLine();
         }
 
@@ -121,7 +167,7 @@ namespace FluentJson.Example
         {
             // Re-using configurations
             JsonConfiguration<Book> configBase = Json.ConfigurationFor<Book>()
-                .Map(map => map
+                .MapType<Book>(map => map
                     .AllFields()
                     .Field<DateTime>(field => field.pubDate, pubDate => pubDate
                         .EncodeAs<string>(value => value.ToShortDateString())
@@ -136,57 +182,32 @@ namespace FluentJson.Example
                     .AllFields()
                 );
 
-            IJsonEncoder<Book> encoder = Json.EncoderFor<Book>(config => config
+            JsonEncoder<Book> encoder = Json.EncoderFor<Book>(config => config
                 .DeriveFrom(configBase)
                 .UseTidy(true)
             );
 
-            IJsonDecoder<Book> decoder = Json.DecoderFor<Book>(config => config
+            JsonDecoder<Book> decoder = Json.DecoderFor<Book>(config => config
                 .DeriveFrom(configBase)
             );
 
             string json = encoder.Encode(Program.bookB);
             Console.WriteLine("Example 2:");
-            Console.WriteLine(json);
-            Console.ReadLine();
-
-            Book book = decoder.Decode(json);
-            Console.WriteLine(book.title);
+            _printJson(json);
             Console.ReadLine();
         }
 
         //***********************************************************************************
-
-        // Next examples could depend upon existing config
-        private static void _setup()
-        {
-            _configuration = Json.ConfigurationFor<Book>()
-                .Map(map => map
-                    .AllFields()
-                    .Field<DateTime>(field => field.pubDate, pubDate => pubDate
-                        .EncodeAs<string>(value => value.ToShortDateString())
-                        .DecodeAs<string>(value => DateTime.Parse(value))
-                    )
-                    .Field<BookType>(field => field.type, type => type
-                        .EncodeAs<int>(value => (int)value)
-                        .DecodeAs<int>(value => (BookType)Enum.ToObject(typeof(BookType), value))
-                    )
-                )
-                .MapType<Author>(map => map
-                    .AllFields()
-                );
-        }
-
         private static void _example3()
         {
             _setup();
 
-            IJsonEncoder<Book> encoder = Json.EncoderFor<Book>(config => config
+            JsonEncoder<Book> encoder = Json.EncoderFor<Book>(config => config
                .DeriveFrom(_configuration)
 
                // This request will NOT override the existing mapping.
                // This makes extending the base configuration easy.
-               .Map(map => map
+               .MapType<Book>(map => map
                    .FieldTo(field => field.numPages, "test")
                 )
 
@@ -195,13 +216,33 @@ namespace FluentJson.Example
 
             string json = encoder.Encode(Program.bookB);
             Console.WriteLine("Example 3:");
-            Console.WriteLine(json);
+            _printJson(json);
             Console.ReadLine();
         }
 
+        private static void _setup()
+        {
+            _configuration = Json.ConfigurationFor<Book>()
+                .MapType<Book>(map => map
+                    .AllFields()
+                    .Field<DateTime>(field => field.pubDate, pubDate => pubDate
+                        .EncodeAs<string>(value => value.ToShortDateString())
+                        .DecodeAs<string>(value => DateTime.Parse(value))
+                    )
+                    .Field<BookType>(field => field.type, type => type
+                        .EncodeAs<int>(value => (int)value)
+                        .DecodeAs<int>(value => (BookType)Enum.ToObject(typeof(BookType), value))
+                    )
+                )
+                .MapType<Author>(map => map
+                    .AllFields()
+                );
+        }
+
+        //***********************************************************************************
         private static void _example4()
         {
-            IJsonEncoder<IDictionary<string, Author>> encoder = Json.EncoderFor<IDictionary<string, Author>>(config => config
+            JsonEncoder<IDictionary<string, Author>> encoder = Json.EncoderFor<IDictionary<string, Author>>(config => config
                 .MapType<Author>(map => map
                     .AllFields()
                 )
@@ -212,15 +253,16 @@ namespace FluentJson.Example
             input.Add("author 1: ", new Author() { forname = "Jules", surname = "Verne" });
             input.Add("author 2: ", new Author() { forname = "Bob", surname = "Doe" });
 
-            string json = encoder.Encode(input);
             Console.WriteLine("Example 4:");
-            Console.WriteLine(json);
+            string json = encoder.Encode(input);
+            _printJson(json);
             Console.ReadLine();
         }
 
+        //***********************************************************************************
         private static void _example5()
         {
-            IJsonEncoder<IDictionary<string, Author>> encoder = Json.EncoderFor<IDictionary<string, Author>>(config => config
+            JsonEncoder<IDictionary<string, Author>> encoder = Json.EncoderFor<IDictionary<string, Author>>(config => config
                 .AutoGenerate()
                 .UseTidy(true)
             );
@@ -229,27 +271,141 @@ namespace FluentJson.Example
             input.Add("author 1: ", new Author() { forname = "Jules", surname = "Verne" });
             input.Add("author 2: ", new Author() { forname = "Bob", surname = "Doe" });
 
-            string json = encoder.Encode(input);
+
             Console.WriteLine("Example 5:");
-            Console.WriteLine(json);
+            string json = encoder.Encode(input);
+            _printJson(json);
             Console.ReadLine();
         }
 
+        //***********************************************************************************
         private static void _example6()
         {
             Dictionary<string, Author> input = new Dictionary<string, Author>();
             input.Add("author 1: ", new Author() { forname = "Jules", surname = "Verne" });
             input.Add("author 2: ", new Author() { forname = "Bob", surname = "Doe" });
 
-            string json = Json.EncodeType<IDictionary<string, Author>>(input);
-            object decoded = Json.Decode(json);
-            json = Json.Encode(decoded);
-
-            IDictionary<string, Author> output = Json.DecodeType<IDictionary<string, Author>>(json);
-
             Console.WriteLine("Example 6:");
-            Console.WriteLine(json);
+            string json = Json.EncodeType<IDictionary<string, Author>>(input);
+            _printJson(json);
             Console.ReadLine();
+
+            object decoded = Json.Decode(json);
+            IDictionary<string, Author> output = Json.DecodeType<IDictionary<string, Author>>(json);
+        }
+
+        //***********************************************************************************
+        private static void _example7()
+        {
+            _setup();
+
+            JsonEncoder<Book> encoder = Json.EncoderFor<Book>(config => config
+               .DeriveFrom(_configuration)
+               .UseTidy(true)
+               .UsePluginPoint(_customEncode)
+           );
+
+            Console.WriteLine("Example 7:");
+            string json = encoder.Encode(Program.bookB);
+            Console.ReadLine();
+
+            JsonDecoder<Book> decoder = Json.DecoderFor<Book>(config => config
+                .DeriveFrom(_configuration)
+                .UsePluginPoint(_customDecode)
+            );
+
+            _printJson(json);
+
+            Book book = decoder.Decode(json);
+            Console.ReadLine();
+        }
+
+        //***********************************************************************************
+        private static void _example8()
+        {
+            dynamic input = new ExpandoObject();
+            input.test = new ExpandoObject();
+            input.test.a = true;
+            input.test.b = new List<string> { "a", "b" };
+
+            Console.WriteLine("Example 8:");
+            string json = Json.EncoderFor<dynamic>(config => config
+                .UsePluginPoint(_customEncode)).Encode(input);
+
+            _printJson(json);
+            Console.ReadLine();
+        }
+
+        private static object _customEncode(object value)
+        {
+            Console.WriteLine("Just before encoding: " + value);
+            if (value is Author)
+            {
+                (value as Author).forname = "".PadLeft((value as Author).forname.Length, '#');
+            }
+
+            return value;
+        }
+
+        private static object _customDecode(object value)
+        {
+            Console.WriteLine("Just after decoding: " + value);
+            return value;
+        }
+
+        //***********************************************************************************
+        private static void _example9()
+        {
+            JsonEncoder<IList<Book>> encoder = Json.EncoderFor<IList<Book>>(config => config
+                .WithMapping(_configuration.GetMapping<Book>())
+                .WithMapping(_configuration.GetMapping<Author>())
+            );
+
+            JsonEncoder<IList<Book>> encoderParallel = Json.EncoderFor<IList<Book>>(config => config
+                .WithMapping(_configuration.GetMapping<Book>())
+                .WithMapping(_configuration.GetMapping<Author>())
+                .UseParallelProcessing(true)
+            );
+
+            JsonDecoder<IList<Book>> decoder = Json.DecoderFor<IList<Book>>(config => config
+                .WithMapping(_configuration.GetMapping<Book>())
+                .WithMapping(_configuration.GetMapping<Author>())
+            );
+
+            List<Book> books = new List<Book>();
+            for (int i = 0; i < 10000; i++)
+            {
+                books.Add(bookA);
+            }
+
+            Console.WriteLine("Example 9:");
+            Console.WriteLine("Encoding 10.000 Books (multi-threaded)");
+            Stopwatch sw = Stopwatch.StartNew();
+            string json = encoderParallel.Encode(books);
+            sw.Stop();
+            Console.WriteLine("Time in ms: " + sw.ElapsedMilliseconds);
+            Console.ReadLine();
+
+            Console.WriteLine("Example 9:");
+            Console.WriteLine("Encoding 10.000 Books");
+            sw = Stopwatch.StartNew();
+            encoder.Encode(books);
+            sw.Stop();
+            Console.WriteLine("Time in ms: " + sw.ElapsedMilliseconds);
+            Console.ReadLine();
+
+            Console.WriteLine("Decoding 10.000 Books");
+            sw = Stopwatch.StartNew();
+            decoder.Decode(json);
+            sw.Stop();
+            Console.WriteLine("Time in ms: " + sw.ElapsedMilliseconds);
+            Console.ReadLine();
+        }
+
+        //***********************************************************************************
+        private static void _example10()
+        {
+
         }
     }
 
